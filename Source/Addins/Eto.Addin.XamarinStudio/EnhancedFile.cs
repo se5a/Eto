@@ -8,7 +8,7 @@ using MonoDevelop.Projects;
 using System.IO;
 using System.Text;
 using MonoDevelop.Ide.StandardHeader;
-using Mono.TextEditor;
+//using Mono.TextEditor;
 using MonoDevelop.Projects.Policies;
 using MonoDevelop.Ide.Gui.Content;
 

@@ -4,6 +4,7 @@ using System.Reflection;
 
 namespace Eto.Addin.XamarinStudio
 {
+	#if !XS6
 	public class VBDotNetProjectBinding : DotNetProjectBinding
 	{
 		public override string Name
@@ -48,5 +49,6 @@ namespace Eto.Addin.XamarinStudio
 			return project;
 		}
 	}
+	#endif
 }
 

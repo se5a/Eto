@@ -6,22 +6,27 @@ using MonoDevelop.Components.Commands;
 using System.Reflection;
 using System.IO;
 using Eto.Designer;
-using Mono.TextEditor;
 using MonoDevelop.Ide.Gui.Content;
 using MonoDevelop.Ide.Navigation;
 using System.Linq;
 using MonoDevelop.Core;
 using System.Collections.Generic;
+#if !XS6
+using Mono.TextEditor;
+using ViewContent = MonoDevelop.Ide.Gui.IViewContent;
+#else
+using AbstractViewContent = MonoDevelop.Ide.Gui.ViewContent;
+#endif
 
 namespace Eto.Addin.XamarinStudio.Editor
 {
 	public class EditorView : AbstractViewContent
 	{
-		readonly IViewContent content;
+		readonly ViewContent content;
 		Gtk.Widget control;
 		PreviewEditorView preview;
 
-		public EditorView(IViewContent content)
+		public EditorView(ViewContent content)
 		{
 			this.content = content;
 			preview = new PreviewEditorView(content.Control.ToEto(), () => content?.WorkbenchWindow?.Document?.Editor?.Text);
@@ -35,6 +40,25 @@ namespace Eto.Addin.XamarinStudio.Editor
 			base.ContentName = content.ContentName;
 		}
 
+		public override System.Threading.Tasks.Task Load (FileOpenInformation fileOpenInformation)
+		{
+			return base.Load (fileOpenInformation);
+		}
+
+		#if XS6
+		protected override void OnContentNameChanged ()
+		{
+			base.OnContentNameChanged ();
+			content.ContentName = ContentName;
+		}
+
+		public override MonoDevelop.Components.Control Control {
+			get {
+				return control;
+			}
+		}
+		#else
+
 		public override Gtk.Widget Control
 		{
 			get { return control; }
@@ -46,12 +70,6 @@ namespace Eto.Addin.XamarinStudio.Editor
 			content.Load(fileName);
 			base.ContentName = fileName;
 		}
-
-		public override bool CanReuseView(string fileName)
-		{
-			return content.CanReuseView(fileName);
-		}
-
 		public override string ContentName
 		{
 			get { return content.ContentName; }
@@ -61,6 +79,13 @@ namespace Eto.Addin.XamarinStudio.Editor
 				content.ContentName = value; 
 			}
 		}
+		#endif
+
+		public override bool CanReuseView(string fileName)
+		{
+			return content.CanReuseView(fileName);
+		}
+
 
 		public override void DiscardChanges()
 		{

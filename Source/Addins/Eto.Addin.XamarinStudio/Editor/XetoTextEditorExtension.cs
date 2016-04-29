@@ -13,6 +13,8 @@ using Eto.Designer;
 using Eto.Designer.Completion;
 using MonoDevelop.Ide.Gui.Content;
 using System.Xml;
+using MonoDevelop.Ide.Editor.Extension;
+using System.Threading.Tasks;
 
 namespace Eto.Addin.XamarinStudio.Editor
 {
@@ -33,6 +35,16 @@ namespace Eto.Addin.XamarinStudio.Editor
 		static IEnumerable<string> GetPath(List<XObject> p)
 		{
 			return p.OfType<XElement>().Select(r => r.Name.FullName);
+		}
+
+		protected override System.Threading.Tasks.Task<CompletionDataList> GetElementCompletions (System.Threading.CancellationToken token)
+		{
+			return base.GetElementCompletions (token);
+		}
+
+		public override bool KeyPress (MonoDevelop.Ide.Editor.Extension.KeyDescriptor descriptor)
+		{
+			return base.KeyPress (descriptor);
 		}
 
 		protected override void GetElementCompletions(CompletionDataList list)
