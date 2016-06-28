@@ -37,7 +37,6 @@
     <Reference Include="System" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Core" />
-    <Reference Include="Mono.Addins" />
     <Reference Include="Mono.Cairo" />
     <Reference Include="Eto">
       <HintPath>packages\Eto.Forms.2.2.0\lib\net45\Eto.dll</HintPath>
@@ -54,7 +53,7 @@
     <Compile Include="ProjectWizard.cs" />
     <Compile Include="ProjectWizardPage.cs" />
     <Compile Include="EtoInitializer.cs" />
-    <Compile Include="VBDotNetProjectBinding.cs" />
+    <Compile Include="VBDotNetProjectExtension.cs" />
     <Compile Include="FSharpProjectBinding.cs" />
     <Compile Include="ParameterSource.cs" />
     <Compile Include="Editor\DisplayBinding.cs" />

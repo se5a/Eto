@@ -289,9 +289,9 @@ namespace Eto.Designer
 
 		void Timer_Elapsed(object sender, EventArgs e)
 		{
+			timer.Stop ();
 			if (interfaceBuilder == null)
 				return;
-			timer.Stop();
 			var code = getCode();
 			if (!string.IsNullOrEmpty(code))
 			{

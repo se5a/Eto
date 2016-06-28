@@ -15,6 +15,7 @@ using MonoDevelop.Ide.Gui.Content;
 using System.Xml;
 using MonoDevelop.Ide.Editor.Extension;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Eto.Addin.XamarinStudio.Editor
 {
@@ -37,168 +38,151 @@ namespace Eto.Addin.XamarinStudio.Editor
 			return p.OfType<XElement>().Select(r => r.Name.FullName);
 		}
 
-		protected override System.Threading.Tasks.Task<CompletionDataList> GetElementCompletions (System.Threading.CancellationToken token)
+		protected override async Task<CompletionDataList> GetElementCompletions (System.Threading.CancellationToken token)
 		{
-			return base.GetElementCompletions (token);
-		}
-
-		public override bool KeyPress (MonoDevelop.Ide.Editor.Extension.KeyDescriptor descriptor)
-		{
-			return base.KeyPress (descriptor);
-		}
-
-		protected override void GetElementCompletions(CompletionDataList list)
-		{
-			var currentPath = GetCurrentPath();
-			var path = GetPath(currentPath);
-			var namespaces = GetNamespaces(currentPath);
-			var completions = Completion.GetCompletions(namespaces).ToList();
-			var filter = completions.Select(r => r.GetFilter(path)).FirstOrDefault(r => r != null);
-			foreach (var completion in completions)
-			{
-				foreach (var item in completion.GetClasses(path, filter))
-				{
-					var xmlCompletion = new XmlCompletionData(item.Name, item.Description, XmlCompletionData.DataType.XmlElement);
+			var list = await base.GetElementCompletions (token);
+			var currentPath = GetCurrentPath ();
+			var path = GetPath (currentPath);
+			var namespaces = GetNamespaces (currentPath);
+			var completions = Completion.GetCompletions (namespaces).ToList ();
+			var filter = completions.Select (r => r.GetFilter (path)).FirstOrDefault (r => r != null);
+			foreach (var completion in completions) {
+				foreach (var item in completion.GetClasses (path, filter)) {
+					var xmlCompletion = new XmlCompletionData (item.Name, item.Description, XmlCompletionData.DataType.XmlElement);
 					xmlCompletion.Icon = Stock.Class;
-					list.Add(xmlCompletion);
+					list.Add (xmlCompletion);
 				}
 			}
-			BaseXmlEditorExtension.AddMiscBeginTags(list);
-			base.GetElementCompletions(list);
+			AddMiscBeginTags (list);
+			return list;
 		}
 
-		public override bool KeyPress(Gdk.Key key, char keyChar, Gdk.ModifierType modifier)
+		public override bool KeyPress (KeyDescriptor descriptor)
 		{
-			var buffer = EditableBuffer;
-			if (CompletionWindowManager.IsVisible)
-			{
+			var buffer = Editor;
+			var keyChar = descriptor.KeyChar;
+			var key = descriptor.SpecialKey;
+			var modifier = descriptor.ModifierKeys;
+			if (CompletionWindowManager.IsVisible) {
 				// do some things to minimize keystrokes with code completion
-				if (keyChar == '=')
-				{
+				if (keyChar == '=') {
 					// we're in an attribute completion, so automatically add the quote and show completions (if available)
-					var ret = base.KeyPress(key, keyChar, modifier);
-					if (!ret)
-					{
-						base.KeyPress((Gdk.Key)0, '"', Gdk.ModifierType.None);
-						buffer.InsertText(buffer.CursorPosition, "\"");
-						buffer.CursorPosition--;
+					var ret = base.KeyPress (descriptor);
+					if (!ret) {
+						base.KeyPress (KeyDescriptor .FromGtk((Gdk.Key)0, '"', Gdk.ModifierType.None));
+						buffer.InsertText (buffer.CaretOffset, "\"");
+						buffer.CaretOffset--;
 					}
 					return ret;
 				}
-				if (key == Gdk.Key.Return 
-					&& modifier == Gdk.ModifierType.None
-					&& isParameterValueCompletion)
-				{
+				if (key == SpecialKey.Return
+				    && modifier == ModifierKeys.None
+					&& isParameterValueCompletion) {
 					// finish completion
-					base.KeyPress(key, keyChar, modifier);
+					base.KeyPress (descriptor);
 					// if double quote already exists, skip it!
-					if (buffer.GetCharAt(buffer.CursorPosition) == '"')
-					{
-						buffer.CursorPosition++;
+					if (buffer.GetCharAt (buffer.CaretOffset) == '"') {
+						buffer.CaretOffset++;
 						return false;
 					}
 					// no double quote yet, so add it
-					return base.KeyPress((Gdk.Key)0, '"', Gdk.ModifierType.None);
+					return base.KeyPress (KeyDescriptor.FromGtk((Gdk.Key)0, '"', Gdk.ModifierType.None));
 				}
-				if (keyChar == '"' || keyChar == '\'')
-				{
+				if (keyChar == '"' || keyChar == '\'') {
 					// finish completion with double quote
-					base.KeyPress(Gdk.Key.Return, '\0', Gdk.ModifierType.None);
+					base.KeyPress (KeyDescriptor.FromGtk(Gdk.Key.Return, '\0', Gdk.ModifierType.None));
 					// if double quote already exists, skip it!
-					if (buffer.GetCharAt(buffer.CursorPosition) == keyChar)
-					{
-						buffer.CursorPosition++;
+					if (buffer.GetCharAt (buffer.CaretOffset) == keyChar) {
+						buffer.CaretOffset++;
 						return false;
 					}
-					return base.KeyPress(key, keyChar, modifier);
+					return base.KeyPress (descriptor);
 				}
 			}
-			if (keyChar == '>')
-			{
+			if (keyChar == '>') {
 				// finish completion first
 				if (CompletionWindowManager.IsVisible)
-					base.KeyPress(Gdk.Key.Return, '\0', Gdk.ModifierType.None);
+					base.KeyPress (KeyDescriptor.FromGtk(Gdk.Key.Return, '\0', Gdk.ModifierType.None));
 
 				// add self-closing tag if there is no content for the control
-				if (!HasContentAtCurrentElement())
-				{
-					base.KeyPress((Gdk.Key)0, '/', Gdk.ModifierType.None);
+				if (!HasContentAtCurrentElement ()) {
+					base.KeyPress (KeyDescriptor.FromGtk((Gdk.Key)0, '/', Gdk.ModifierType.None));
 					//buffer.InsertText(buffer.CursorPosition++, "/");
-					return base.KeyPress(key, keyChar, modifier);
+					return base.KeyPress (descriptor);
 				}
 			}
-			if (keyChar == '"' || keyChar == '\'')
-			{
+			if (keyChar == '"' || keyChar == '\'') {
 				// if double quote already exists, skip it!
-				if (buffer.GetCharAt(buffer.CursorPosition) == keyChar)
-				{
-					buffer.CursorPosition++;
+				if (buffer.GetCharAt (buffer.CaretOffset) == keyChar) {
+					buffer.CaretOffset++;
 					return false;
 				}
 			}
-			if (keyChar == '.')
-			{
-				var result = base.KeyPress(key, keyChar, modifier);
+			if (keyChar == '.') {
+				var result = base.KeyPress (descriptor);
 				// provide completions for <Control.Property> elements
-				var completionContext = CompletionWidget.CurrentCodeCompletionContext;
+				var completionContext = this.CurrentCompletionContext;
 				var offset = completionContext.TriggerOffset - 1;
-				var ch = CompletionWidget.GetChar(offset);
-				while (ch != '\0' && (XmlConvert.IsNCNameChar(ch) || ch == ':') && offset > 0)
-				{
-					offset--;
-					ch = CompletionWidget.GetChar(offset);
+
+				// using reflection here as these have been made internal as of XS 6.0.  Why? who knows.  Alternative? reflection of course.
+				var completionWidget = GetType ().GetProperty ("CompletionWidget", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue (this);
+				var getCharMethod = completionWidget?.GetType ()?.GetMethod ("GetChar", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+				if (getCharMethod != null) {
+					Func<int, char> getChar = (arg) => {
+						return (char)getCharMethod.Invoke (completionWidget, new object [] { arg });
+					};
+
+					var ch = getChar (offset);
+					while (ch != '\0' && (XmlConvert.IsNCNameChar (ch) || ch == ':') && offset > 0) {
+						offset--;
+						ch = getChar (offset);
+					}
+					if (ch != '\0' && ch != '<')
+						return result;
 				}
-				if (ch != '\0' && ch != '<')
-					return result;
 				offset++;
 				var len = completionContext.TriggerOffset - offset;
-				var name = Editor.GetTextAt(offset, len);
-				try
-				{
-					XmlConvert.VerifyName(name);
-				}
-				catch (XmlException)
-				{
+				var name = Editor.GetTextAt (offset, len);
+				try {
+					XmlConvert.VerifyName (name);
+				} catch (XmlException) {
 					// not a valid xml name
 					return result;
 				}
 
-				var xobject = Tracker.Engine.Nodes.Peek(1) as IAttributedXObject;
-				if (xobject == null)
-				{
+				var xobject = Tracker.Engine.Nodes.Peek (1) as IAttributedXObject;
+				if (xobject == null) {
 					string prefix = null;
-					var nsidx = name.IndexOf(':');
-					if (nsidx > 0)
-					{
-						prefix = name.Substring(0, nsidx);
-						name = name.Substring(nsidx + 1);
+					var nsidx = name.IndexOf (':');
+					if (nsidx > 0) {
+						prefix = name.Substring (0, nsidx);
+						name = name.Substring (nsidx + 1);
 					}
-					name = name.TrimEnd('.');
-					xobject = new XElement(Tracker.Engine.Location, new XName(prefix, name));
+					name = name.TrimEnd ('.');
+					xobject = new XElement (Tracker.Engine.Location, new XName (prefix, name));
 				}
-				
-				var attributeDictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-				if (xobject.Attributes != null)
-				{
-					foreach (XAttribute current in xobject.Attributes)
-					{
-						attributeDictionary[current.Name.FullName] = current.Value ?? string.Empty;
-					}
-				}
-				var completions = GetAttributeCompletions(xobject, attributeDictionary, XmlCompletionData.DataType.XmlElement, true);
 
-				if (completions != null)
-				{
-					ShowCompletion(completions);
+				var attributeDictionary = new Dictionary<string, string> (StringComparer.OrdinalIgnoreCase);
+				if (xobject.Attributes != null) {
+					foreach (XAttribute current in xobject.Attributes) {
+						attributeDictionary [current.Name.FullName] = current.Value ?? string.Empty;
+					}
+				}
+				var completions = GetAttributeCompletions(xobject, attributeDictionary, CancellationToken.None, XmlCompletionData.DataType.XmlElement, true).Result;
+
+				if (completions?.Count > 0) {
+					ShowCompletion (completions);
 					return false;
 				}
 			}
-			return base.KeyPress(key, keyChar, modifier);
+			return base.KeyPress (descriptor);
 		}
 
-		protected override CompletionDataList GetAttributeCompletions(IAttributedXObject attributedOb, Dictionary<string, string> existingAtts)
+		protected override async Task<CompletionDataList> GetEntityCompletions (System.Threading.CancellationToken token)
 		{
-			return GetAttributeCompletions(attributedOb, existingAtts, XmlCompletionData.DataType.XmlAttribute, false);
+			var list = await base.GetEntityCompletions (token);
+
+			return list;
 		}
 
 		bool HasContentAtCurrentElement()
@@ -213,11 +197,15 @@ namespace Eto.Addin.XamarinStudio.Editor
 			var objectName = attributedOb.Name.FullName;
 			return Completion.GetCompletions(namespaces).All(r => r.HasContent(objectName, path) != false);
 		}
-		
 
-		CompletionDataList GetAttributeCompletions(IAttributedXObject attributedOb, Dictionary<string, string> existingAtts, XmlCompletionData.DataType type, bool elementNamespacesOnly)
+		protected override Task<CompletionDataList> GetAttributeCompletions (IAttributedXObject attributedOb, Dictionary<string, string> existingAtts, CancellationToken token)
 		{
-			var list = base.GetAttributeCompletions(attributedOb, existingAtts) ?? new CompletionDataList();
+			return GetAttributeCompletions (attributedOb, existingAtts, token, XmlCompletionData.DataType.XmlAttribute, false);
+		}
+
+		async Task<CompletionDataList> GetAttributeCompletions (IAttributedXObject attributedOb, Dictionary<string, string> existingAtts, CancellationToken token, XmlCompletionData.DataType type, bool elementNamespacesOnly)
+		{
+			var list = await base.GetAttributeCompletions (attributedOb, existingAtts, token) ?? new CompletionDataList ();
 			var currentPath = GetCurrentPath();
 			var path = GetPath(currentPath);
 			var namespaces = GetNamespaces(currentPath);
@@ -238,28 +226,25 @@ namespace Eto.Addin.XamarinStudio.Editor
 
 		bool isParameterValueCompletion;
 
-		protected override ICompletionDataList HandleCodeCompletion(CodeCompletionContext completionContext, bool forced, ref int triggerWordLength)
+		protected override async Task<ICompletionDataList> HandleCodeCompletion (CodeCompletionContext completionContext, bool forced, CancellationToken token)
 		{
 			isParameterValueCompletion = false;
-			return base.HandleCodeCompletion(completionContext, forced, ref triggerWordLength);
+			return await base.HandleCodeCompletion (completionContext, forced, token);
 		}
 
-		protected override CompletionDataList GetAttributeValueCompletions(IAttributedXObject attributedOb, XAttribute att)
+		protected override async Task<CompletionDataList> GetAttributeValueCompletions (IAttributedXObject attributedOb, XAttribute att, CancellationToken token)
 		{
 			isParameterValueCompletion = true;
-			var list = base.GetAttributeValueCompletions(attributedOb, att) ?? new CompletionDataList();
-
-			var currentPath = GetCurrentPath();
-			var path = GetPath(currentPath);
-			var namespaces = GetNamespaces(currentPath);
+			var list = await base.GetAttributeValueCompletions (attributedOb, att, token);
+			var currentPath = GetCurrentPath ();
+			var path = GetPath (currentPath);
+			var namespaces = GetNamespaces (currentPath);
 			var objectName = attributedOb.Name.FullName;
-			foreach (var completion in Completion.GetCompletions(namespaces))
-			{
-				foreach (var item in completion.GetPropertyValues(objectName, att.Name.FullName, path))
-				{
-					var xmlCompletion = new XmlCompletionData(item.Name, item.Description, XmlCompletionData.DataType.XmlAttributeValue);
-					xmlCompletion.Icon = GetIcon(item.Type);
-					list.Add(xmlCompletion);
+			foreach (var completion in Completion.GetCompletions (namespaces)) {
+				foreach (var item in completion.GetPropertyValues (objectName, att.Name.FullName, path)) {
+					var xmlCompletion = new XmlCompletionData (item.Name, item.Description, XmlCompletionData.DataType.XmlAttributeValue);
+					xmlCompletion.Icon = GetIcon (item.Type);
+					list.Add (xmlCompletion);
 				}
 			}
 			return list;

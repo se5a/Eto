@@ -1,11 +1,12 @@
 ﻿using System;
 using MonoDevelop.Projects;
 using System.Linq;
+using MonoDevelop.Projects.Extensions;
 
 namespace Eto.Addin.XamarinStudio
 {
-	#if !XS6
-	public class FSharpProjectBinding : DotNetProjectBinding
+	#if false
+	public class FSharpProjectBinding : DotNetProjectExtension
 	{
 		public override string Name
 		{
