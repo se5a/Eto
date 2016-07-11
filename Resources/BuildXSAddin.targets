@@ -37,6 +37,6 @@
 		<!-- clean output from previous builds -->
 		<Exec Command="rm -rf $(BaseDir)\BuildOutput" />
 		<Exec Command="rm -rf $(MSBuildThisFileDirectory)\packages\Eto.*" />
-		<Exec Command="rm -rf $(SourceDir)\Addins\Eto.Addin.XamarinStudio\packages" />
+		<Exec Command="rm -rf $(SourceDir)\Addins\packages" />
 	</Target>
 </Project>
