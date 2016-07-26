@@ -1,9 +1,8 @@
 ﻿using System;
 using System.CodeDom.Compiler;
-using Microsoft.CSharp;
 using System.IO;
 using System.Collections.Generic;
-
+using Microsoft.CodeDom.Providers.DotNetCompilerPlatform;
 
 namespace Eto.Designer.Builders
 {
@@ -12,7 +11,7 @@ namespace Eto.Designer.Builders
 		protected override CodeDomProvider CreateCodeProvider()
 		{
 			var options = new Dictionary<string, string> { { "CompilerVersion", "v4.0" } };
-			return new CSharpCodeProvider(options);
+			return new CSharpCodeProvider();
 		}
 	}
 }
