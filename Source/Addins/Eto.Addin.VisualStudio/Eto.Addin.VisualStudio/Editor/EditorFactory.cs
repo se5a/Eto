@@ -17,6 +17,7 @@ using Microsoft.VisualStudio.Utilities;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Editor;
 using Eto.Addin.VisualStudio.Wizards;
+using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 
 namespace Eto.Addin.VisualStudio.Editor
 {
@@ -94,6 +95,7 @@ namespace Eto.Addin.VisualStudio.Editor
 		public int MapLogicalView(ref Guid rguidLogicalView, out string pbstrPhysicalView)
 		{
 			pbstrPhysicalView = null;    // initialize out parameter
+
 
 			// we support only a single physical view
 			if (
@@ -221,6 +223,14 @@ namespace Eto.Addin.VisualStudio.Editor
 					, riid: ref guidIVsTextLines
 					, ppDocData: out docDataPointer);
 				var docData = (IVsTextLines)Marshal.GetObjectForIUnknown(docDataPointer);
+
+				/* set site for the doc data?
+				var objWSite = docData as IObjectWithSite;
+				if (objWSite != null)
+				{
+					var oleServiceProvider = (IOleServiceProvider)GetService(typeof(IOleServiceProvider));
+					objWSite.SetSite(oleServiceProvider);
+				}*/
 
 				// assign the right language service for xml/json
 				if (fileName.EndsWith(".xeto", StringComparison.OrdinalIgnoreCase))

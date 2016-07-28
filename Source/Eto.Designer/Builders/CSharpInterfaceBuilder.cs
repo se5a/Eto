@@ -2,16 +2,16 @@
 using System.CodeDom.Compiler;
 using System.IO;
 using System.Collections.Generic;
-using Microsoft.CodeDom.Providers.DotNetCompilerPlatform;
+using Microsoft.CSharp;
 
 namespace Eto.Designer.Builders
 {
-	public class CSharpInterfaceBuilder : CodeInterfaceBuilder
+	public class CSharpInterfaceBuilder : CodeDomInterfaceBuilder
 	{
 		protected override CodeDomProvider CreateCodeProvider()
 		{
 			var options = new Dictionary<string, string> { { "CompilerVersion", "v4.0" } };
-			return new CSharpCodeProvider();
+			return new CSharpCodeProvider(options);
 		}
 	}
 }

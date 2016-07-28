@@ -6,7 +6,7 @@ namespace Eto.Designer
 {
 	public class PreviewEditorView : Splitter
 	{
-		Panel previewPanel;
+		Scrollable previewPanel;
 		Panel errorPanel;
 		IInterfaceBuilder interfaceBuilder;
 		UITimer timer;
@@ -30,7 +30,7 @@ namespace Eto.Designer
 			FixedPanel = SplitterFixedPanel.None;
 			RelativePosition = lastPosition;
 
-			previewPanel = new Panel();
+			previewPanel = new Scrollable { Border = BorderType.None };
 			errorPanel = new Panel { Padding = new Padding(5), Visible = false, BackgroundColor = new Color(Colors.Red, .4f) };
 
 			Panel1 = new StackLayout
@@ -83,12 +83,30 @@ namespace Eto.Designer
 				var window = child as Eto.Forms.Window;
 				if (window != null)
 				{
+					var size = window.ClientSize;
+					// some platforms report 0,0 even though it probably should be -1, -1 initially.
+					if (size.Width == 0)
+						size.Width = -1;
+					if (size.Height == 0)
+						size.Height = -1;
 					// swap out window for a panel so we can add it as a child
-					var content = window.Content;
-					window.Content = null;
-					child = new Panel { Content = content, Padding = window.Padding };
+					child = new Panel {
+						BackgroundColor = window.BackgroundColor,
+						Padding = window.Padding,
+						Size = size,
+						Content = window.Content
+					};
 				}
-				previewPanel.Content = child;
+				else
+				{
+					child = new Panel
+					{
+						BackgroundColor = SystemColors.Control,
+						Content = child
+					};
+				}
+
+				previewPanel.Content = TableLayout.AutoSized(child, centered: true);
 			}
 
 			if (processingCount > 1)

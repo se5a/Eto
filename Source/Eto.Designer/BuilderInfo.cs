@@ -20,49 +20,71 @@ namespace Eto.Designer
 		public Func<string, string> GetCodeFile { get; set; }
 		public Func<string, string> GetDesignFile { get; set; }
 
-		static List<BuilderInfo> builders = new List<BuilderInfo>
+		static IEnumerable<BuilderInfo> GetBuilders()
 		{
-			new BuilderInfo
-			{ 
-				Extension = ".eto.cs", 
-				DesignExtension = "^.+(?<![jx]eto)[.]cs$",
-				CreateBuilder = () => new CSharpInterfaceBuilder { InitializeAssembly = Assembly.GetExecutingAssembly().Location },
-				GetCodeFile = fileName => Regex.Replace(fileName, @"(.+)[.]eto([.]cs)", "$1$2"),
-				GetDesignFile = fileName => Regex.Replace(fileName, @"(.+)([.]cs)", "$1.eto$2")
-			},
-			new BuilderInfo
-			{ 
-				Extension = ".eto.vb", 
-				DesignExtension = "^.+(?<![jx]eto)[.]vb$",
-				CreateBuilder = () => new VbInterfaceBuilder { InitializeAssembly = Assembly.GetExecutingAssembly().Location },
-				GetCodeFile = fileName => Regex.Replace(fileName, @"(.+)[.]eto([.]vb)", "$1$2"),
-				GetDesignFile = fileName => Regex.Replace(fileName, @"(.+)([.]vb)", "$1.eto$2")
-			},
-			new BuilderInfo
+			if (EtoEnvironment.Platform.IsWindows)
+			{
+				yield return new BuilderInfo
+				{
+					Extension = ".eto.cs",
+					DesignExtension = "^.+(?<![jx]eto)[.]cs$",
+					CreateBuilder = () => new RoslynCSharpInterfaceBuilder { InitializeAssembly = Assembly.GetExecutingAssembly().Location },
+					GetCodeFile = fileName => Regex.Replace(fileName, @"(.+)[.]eto([.]cs)", "$1$2"),
+					GetDesignFile = fileName => Regex.Replace(fileName, @"(.+)([.]cs)", "$1.eto$2")
+				};
+				yield return new BuilderInfo
+				{
+					Extension = ".eto.vb",
+					DesignExtension = "^.+(?<![jx]eto)[.]vb$",
+					CreateBuilder = () => new RoslynVbInterfaceBuilder { InitializeAssembly = Assembly.GetExecutingAssembly().Location },
+					GetCodeFile = fileName => Regex.Replace(fileName, @"(.+)[.]eto([.]vb)", "$1$2"),
+					GetDesignFile = fileName => Regex.Replace(fileName, @"(.+)([.]vb)", "$1.eto$2")
+				};
+			}
+			else {
+				yield return new BuilderInfo
+				{
+					Extension = ".eto.cs",
+					DesignExtension = "^.+(?<![jx]eto)[.]cs$",
+					CreateBuilder = () => new CSharpInterfaceBuilder { InitializeAssembly = Assembly.GetExecutingAssembly().Location },
+					GetCodeFile = fileName => Regex.Replace(fileName, @"(.+)[.]eto([.]cs)", "$1$2"),
+					GetDesignFile = fileName => Regex.Replace(fileName, @"(.+)([.]cs)", "$1.eto$2")
+				};
+				yield return new BuilderInfo
+				{
+					Extension = ".eto.vb",
+					DesignExtension = "^.+(?<![jx]eto)[.]vb$",
+					CreateBuilder = () => new VbInterfaceBuilder { InitializeAssembly = Assembly.GetExecutingAssembly().Location },
+					GetCodeFile = fileName => Regex.Replace(fileName, @"(.+)[.]eto([.]vb)", "$1$2"),
+					GetDesignFile = fileName => Regex.Replace(fileName, @"(.+)([.]vb)", "$1.eto$2")
+				};
+			};
+			yield return new BuilderInfo
 			{
 				Extension = ".eto.fs",
 				DesignExtension = "^.+(?<![jx]eto)[.]fs$",
 				CreateBuilder = () => new FSharpInterfaceBuilder { InitializeAssembly = Assembly.GetExecutingAssembly().Location },
 				GetCodeFile = fileName => Regex.Replace(fileName, @"(.+)[.]eto([.]fs)", "$1$2"),
 				GetDesignFile = fileName => Regex.Replace(fileName, @"(.+)([.]fs)", "$1.eto$2")
-			},
-			new BuilderInfo
+			};
+			yield return new BuilderInfo
 			{
 				Extension = ".xeto",
 				DesignExtension = "^.+[.]xeto[.](cs|fs|vb)$",
 				CreateBuilder = () => new XamlInterfaceBuilder(),
 				GetCodeFile = fileName => fileName + ".cs",
 				GetDesignFile = fileName => Regex.Replace(fileName, @"(.+[.]xeto)[.]cs", "$1")
-			},
-			new BuilderInfo
+			};
+			yield return new BuilderInfo
 			{
 				Extension = ".jeto",
 				DesignExtension = "^.+[.]jeto[.](cs|fs|vb)$",
 				CreateBuilder = () => new JsonInterfaceBuilder(),
 				GetCodeFile = fileName => fileName + ".cs",
 				GetDesignFile = fileName => Regex.Replace(fileName, @"(.+[.]jeto)[.]cs", "$1")
-			}
-		};
+			};
+		}
+		static List<BuilderInfo> builders => GetBuilders().ToList();
 
 		public static bool Supports(string fileName)
 		{

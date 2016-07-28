@@ -39,10 +39,10 @@ namespace Eto.Designer
 					new Application().Attach();
 				}
 				var asm = Assembly.Load(testAssembly);
-				var type = CodeInterfaceBuilder.FindControlType(asm);
+				var type = CodeDomInterfaceBuilder.FindControlType(asm);
 				if (type != null)
 				{
-					var control = CodeInterfaceBuilder.InstantiateControl(type);
+					var control = CodeDomInterfaceBuilder.InstantiateControl(type);
 					if (control != null)
 					{
 						controlHolder = control;

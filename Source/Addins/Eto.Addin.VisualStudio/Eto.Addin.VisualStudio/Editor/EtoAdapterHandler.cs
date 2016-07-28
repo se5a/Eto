@@ -39,7 +39,7 @@ namespace Eto.Addin.VisualStudio.Editor
 	{
 		public void Initialize(Platform platform)
 		{
-			platform.Add<IEtoAdapterHandler>(() => new EtoAdapterHandler());
+			//platform.Add<IEtoAdapterHandler>(() => new EtoAdapterHandler());
 		}
 	}
 
