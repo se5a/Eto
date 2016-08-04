@@ -4,9 +4,43 @@ using Eto.Drawing;
 
 namespace Eto.Designer
 {
+	public class DesignSurface : Drawable
+	{
+		public DesignSurface()
+		{
+
+		}
+
+		Control _content;
+
+		public new Control Content
+		{
+			get { return _content; }
+			set
+			{
+				_content = value;
+				base.Content = TableLayout.AutoSized(value, centered: true);
+				Application.Instance.AsyncInvoke(Invalidate);
+			}
+		}
+
+		protected override void OnPaint(PaintEventArgs e)
+		{
+			base.OnPaint(e);
+			if (_content != null)
+			{
+				var rect = RectangleFromScreen(_content.RectangleToScreen(new RectangleF(_content.Size)));
+				rect.Inflate(5, 5);
+
+				e.Graphics.DrawRectangle(Colors.Blue, rect);
+			}
+		}
+	}
+
 	public class PreviewEditorView : Splitter
 	{
 		Scrollable previewPanel;
+		DesignSurface designSurface;
 		Panel errorPanel;
 		IInterfaceBuilder interfaceBuilder;
 		UITimer timer;
@@ -30,7 +64,8 @@ namespace Eto.Designer
 			FixedPanel = SplitterFixedPanel.None;
 			RelativePosition = lastPosition;
 
-			previewPanel = new Scrollable { Border = BorderType.None };
+			designSurface = new DesignSurface();
+			previewPanel = new Scrollable { Border = BorderType.None, Content = designSurface };
 			errorPanel = new Panel { Padding = new Padding(5), Visible = false, BackgroundColor = new Color(Colors.Red, .4f) };
 
 			Panel1 = new StackLayout
@@ -106,7 +141,7 @@ namespace Eto.Designer
 					};
 				}
 
-				previewPanel.Content = TableLayout.AutoSized(child, centered: true);
+				designSurface.Content = child;
 			}
 
 			if (processingCount > 1)
