@@ -50,6 +50,7 @@ namespace Eto.Addin.VisualStudio.Editor
 		uint linesEventsCookie;
 		IVsTextView viewAdapter;
 		IVsCodeWindow codeWindow;
+		IWpfTextViewHost wpfViewHost;
 
 		void RegisterIndependentView(bool subscribe)
 		{
@@ -103,7 +104,10 @@ namespace Eto.Addin.VisualStudio.Editor
 
 			editorControl = new Panel();
 			preview = new PreviewEditorView(editorControl, () => textBuffer?.GetText());
-			preview.GotFocus += (sender, e) => editorControl.Content?.Focus();
+			preview.GotFocus += (sender, e) =>
+			{
+				wpfViewHost?.TextView?.VisualElement?.Focus();
+			};
 			if (!preview.SetBuilder(fileName))
 				throw new InvalidOperationException(string.Format("Could not find builder for file {0}", fileName));
 
@@ -242,7 +246,8 @@ namespace Eto.Addin.VisualStudio.Editor
 				// get the view first so host is created 
 				//var wpfView = editorSvc.GetWpfTextView(viewAdapter);
 
-				var wpfViewHost = editorSvc.GetWpfTextViewHost(viewAdapter);
+				wpfViewHost = editorSvc.GetWpfTextViewHost(viewAdapter);
+				
 
 				var wpfElement = wpfViewHost?.HostControl;
 				if (wpfElement != null)
