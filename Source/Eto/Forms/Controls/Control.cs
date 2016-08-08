@@ -783,7 +783,7 @@ namespace Eto.Forms
 				OnPreLoad(EventArgs.Empty);
 				OnLoad(EventArgs.Empty);
 				OnDataContextChanged(EventArgs.Empty);
-				OnLoadComplete(EventArgs.Empty);
+				Application.Instance.AsyncInvoke(() => OnLoadComplete(EventArgs.Empty));
 			}
 		}
 

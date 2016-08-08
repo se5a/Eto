@@ -11,12 +11,13 @@ using MonoDevelop.Ide.Navigation;
 using System.Linq;
 using MonoDevelop.Core;
 using System.Collections.Generic;
-using AbstractViewContent = MonoDevelop.Ide.Gui.ViewContent;
 using System.Threading.Tasks;
+using MonoDevelop.Components.Mac;
+using System.Diagnostics;
 
 namespace Eto.Addin.XamarinStudio.Editor
 {
-	public class EditorView : AbstractViewContent
+	public class EditorView : ViewContent
 	{
 		readonly ViewContent content;
 		Gtk.Widget control;
@@ -24,15 +25,41 @@ namespace Eto.Addin.XamarinStudio.Editor
 
 		public EditorView(ViewContent content)
 		{
-			this.content = content;
-			preview = new PreviewEditorView(content.Control.GetNativeWidget<Gtk.Widget>().ToEto(), () => content?.WorkbenchWindow?.Document?.Editor?.Text);
-			content.DirtyChanged += content_DirtyChanged;
-			var commandRouterContainer = new CommandRouterContainer(preview.ToNative(true), content, true);
-			commandRouterContainer.Show();
-			control = commandRouterContainer;
-			IdeApp.Workbench.ActiveDocumentChanged += Workbench_ActiveDocumentChanged;
+			try {
+				this.content = content;
+				
+				var editorWidget = content.Control.GetNativeWidget<Gtk.Widget> ();
+				editorWidget.ShowAll ();
+				var editor = new GtkEmbed2 (editorWidget);
+				//var editorEto = new Button { Text = "ablsdjfoaisdjf" }; //editor.ToEto ();
+				var editorEto = editor.ToEto ();
+				preview = new PreviewEditorView (editorEto, () => content?.WorkbenchWindow?.Document?.Editor?.Text);
+				MonoDevelop.Components.Control previewNative;
+				if (Platform.Instance.IsMac) {
+					var nspreview = XamMac2Helpers.ToNative (preview, true);
+					//previewNative = GtkMacInterop.NSViewToGtkWidget(nspreview);
+					var nsviewContainer = new NSViewContainer2 ();
+					nspreview.AutoresizingMask = AppKit.NSViewResizingMask.WidthSizable | AppKit.NSViewResizingMask.HeightSizable;
+					nsviewContainer.Realized += (sender, e) =>
+					{
+						nspreview.Frame = nsviewContainer.NSView.Bounds;
+						nsviewContainer.NSView.AddSubview(nspreview);
+					};
+					previewNative = nsviewContainer;
+				} else
+					previewNative = Gtk2Helpers.ToNative (preview, true);
 
-			ContentName = content.ContentName;
+				var commandRouterContainer = new CommandRouterContainer (previewNative, content, true);
+				commandRouterContainer.ShowAll ();
+				control = commandRouterContainer;
+
+				content.DirtyChanged += content_DirtyChanged;
+				IdeApp.Workbench.ActiveDocumentChanged += Workbench_ActiveDocumentChanged;
+				ContentName = content.ContentName;
+
+			} catch (Exception ex) {
+				Debug.WriteLine ($"{ex}");
+			}
 		}
 
 		public override async Task Load (FileOpenInformation fileOpenInformation)

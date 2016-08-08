@@ -8,8 +8,8 @@ namespace Eto.Designer
 {
 	public class DesignSurface : Drawable
 	{
-		public static SizeF GripPadding = new SizeF(5, 5);
-		static SizeF GripSize = new SizeF(2, 2);
+		public static Size GripPadding = new Size(5, 5);
+		static Size GripSize = new Size(2, 2);
 		static Color GripColor = Colors.LightSkyBlue;
 		List<Grip> _grips;
 		bool _isSizing;
@@ -20,7 +20,8 @@ namespace Eto.Designer
 		public DesignSurface()
 		{
 			_grips = CreateGrips().ToList();
-			Padding = 15;
+			var padding = GripPadding * 3;
+			Padding = new Padding(padding.Width, padding.Height);
 		}
 
 		Control _content;
@@ -151,7 +152,7 @@ namespace Eto.Designer
 					var rect = SizeBoundsWithPadding;
 					var text = $"{_content?.Size.Width}x{_content?.Size.Height}";
 					gripSize = g.MeasureString(font, text) + 4;
-					Padding = new Padding(15, Math.Max(15, (int)gripSize.Height + 5), 15, 15);
+					//Padding = new Padding(15, Math.Max(15, (int)gripSize.Height + 5), 15, 15);
 					rect = new RectangleF(rect.Center.X - gripSize.Width / 2, rect.Top - gripSize.Height, gripSize.Width, gripSize.Height);
 					g.FillRectangle(GripColor, rect);
 					g.DrawText(font, Colors.White, rect.Location + 2, text);
@@ -233,6 +234,7 @@ namespace Eto.Designer
 				Invalidate();
 			}
 			Cursor = grip?.Cursor ?? Cursors.Default;
+			Invalidate ();
 		}
 
 		Grip GetGrip(PointF location)
@@ -261,6 +263,7 @@ namespace Eto.Designer
 
 		public PreviewEditorView(Control editor, Func<string> getCode)
 		{
+			Size = new Size (200, 200);
 			Editor = editor;
 			this.getCode = getCode;
 
@@ -269,7 +272,7 @@ namespace Eto.Designer
 			RelativePosition = lastPosition;
 
 			designSurface = new DesignSurface();
-			previewPanel = new Scrollable { Border = BorderType.None, Content = designSurface };
+			previewPanel = new Scrollable { Border = BorderType.None, Content = designSurface, BackgroundColor = Colors.White };
 			errorPanel = new Panel { Padding = new Padding(5), Visible = false, BackgroundColor = new Color(Colors.Red, .4f) };
 
 			Panel1 = new StackLayout
@@ -336,7 +339,7 @@ namespace Eto.Designer
 						size.Height = -1;
 					// swap out window for a panel so we can add it as a child
 					child = new Panel {
-						BackgroundColor = window.BackgroundColor,
+						BackgroundColor = SystemColors.Control,
 						Padding = window.Padding,
 						Size = size,
 						Content = window.Content

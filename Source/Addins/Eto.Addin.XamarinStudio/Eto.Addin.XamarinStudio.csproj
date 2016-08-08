@@ -38,6 +38,9 @@
     <Reference Include="System.Core" />
     <Reference Include="Mono.Cairo" />
     <Reference Include="System.Xml.Linq" />
+    <Reference Include="Xamarin.Mac">
+      <HintPath>..\..\..\..\..\..\..\..\Applications\Xamarin Studio.app\Contents\Resources\lib\monodevelop\bin\Xamarin.Mac.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -54,6 +57,7 @@
     <Compile Include="Editor\EditorView.cs" />
     <Compile Include="EnhancedFile.cs" />
     <Compile Include="ExtensionExistsCondition.cs" />
+    <Compile Include="Editor\GtkEmbed2.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Properties\Manifest.addin.xml" />
@@ -338,6 +342,10 @@
       <Project>{7FAA1841-0869-474C-9D89-87E1B4BAB190}</Project>
       <Name>Eto.Designer</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\Eto.Mac\Eto.XamMac2 - net45.csproj">
+      <Project>{856E8C70-2702-11E4-8C21-0800200C9A66}</Project>
+      <Name>Eto.XamMac2 - net45</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.Xml">
@@ -349,8 +357,9 @@
     <AddinReference Include="MonoDevelop.PackageManagement">
       <Version>5.9</Version>
     </AddinReference>
+    <AddinReference Include="MonoDevelop.MacPlatform" />
   </ItemGroup>
   <Import Project="..\..\Shared\Common.targets" />
   <Import Project="packages\MonoDevelop.Addins.0.3.3\build\net40\MonoDevelop.Addins.targets" Condition="Exists('packages\MonoDevelop.Addins.0.3.3\build\net40\MonoDevelop.Addins.targets')" />
-  <Import Project="..\packages\MonoDevelop.Addins.0.3.3\build\net40\MonoDevelop.Addins.targets" Condition="Exists('..\packages\MonoDevelop.Addins.0.3.3\build\net40\MonoDevelop.Addins.targets')" />
+  <Import Project="..\packages\MonoDevelop.Addins.0.3.4\build\net40\MonoDevelop.Addins.targets" Condition="Exists('..\packages\MonoDevelop.Addins.0.3.4\build\net40\MonoDevelop.Addins.targets')" />
 </Project>

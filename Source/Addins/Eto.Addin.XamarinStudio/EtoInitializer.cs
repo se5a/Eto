@@ -5,13 +5,17 @@ namespace Eto.Addin.XamarinStudio
 {
 	public static class EtoInitializer
 	{
-		static readonly string AddinPlatform = Eto.Platforms.Gtk2;
+		static readonly string AddinPlatform = Eto.Platforms.XamMac2;
 
 		public static void Initialize()
 		{
 			if (Platform.Instance == null)
 			{
-				new Eto.Forms.Application(AddinPlatform).Attach();
+				try {
+					new Eto.Forms.Application (AddinPlatform).Attach ();
+				} catch (Exception ex) {
+					Console.WriteLine ($"{ex}");
+				}
 			}
 
 			if (EtoEnvironment.Platform.IsMac)

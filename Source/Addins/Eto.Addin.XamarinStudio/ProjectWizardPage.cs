@@ -33,18 +33,16 @@ namespace Eto.Addin.XamarinStudio
 			get { return model.Title; }
 		}
 
-#if XS6
 		protected override object CreateNativeWidget<T> ()
 		{
-			return (view ?? (view = new ProjectWizardPageView (model))).ToNative (true);
-		}
-#else
+			if (view == null)
+				view = new ProjectWizardPageView (model);
 
-		protected override object CreateNativeWidget()
-		{
-			return (view ?? (view = new ProjectWizardPageView(model))).ToNative(true);
+			if (Platform.Instance.IsMac)
+				return XamMac2Helpers.ToNative (view, true);
+			else
+				return Gtk2Helpers.ToNative (view, true);
 		}
-#endif
 
 		public void Validate()
 		{
