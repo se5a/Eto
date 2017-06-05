@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Eto.Drawing;
@@ -184,7 +184,7 @@ namespace Eto.Forms
 		/// <summary>
 		/// Occurs when an individual cell is clicked.
 		/// </summary>
-		public event EventHandler<GridViewCellEventArgs> CellClick
+		public event EventHandler<GridViewCellMouseEventArgs> CellClick
 		{
 			add { Properties.AddHandlerEvent(CellClickEvent, value); }
 			remove { Properties.RemoveEvent(CellClickEvent, value); }
@@ -194,7 +194,7 @@ namespace Eto.Forms
 		/// Raises the <see cref="CellClick"/> event.
 		/// </summary>
 		/// <param name="e">Grid cell event arguments.</param>
-		protected virtual void OnCellClick(GridViewCellEventArgs e)
+		protected virtual void OnCellClick(GridViewCellMouseEventArgs e)
 		{
 			Properties.TriggerEvent(CellClickEvent, this, e);
 		}
@@ -207,7 +207,7 @@ namespace Eto.Forms
 		/// <summary>
 		/// Occurs when an individual cell is double clicked.
 		/// </summary>
-		public event EventHandler<GridViewCellEventArgs> CellDoubleClick
+		public event EventHandler<GridViewCellMouseEventArgs> CellDoubleClick
 		{
 			add { Properties.AddHandlerEvent(CellDoubleClickEvent, value); }
 			remove { Properties.RemoveEvent(CellDoubleClickEvent, value); }
@@ -217,7 +217,7 @@ namespace Eto.Forms
 		/// Raises the <see cref="CellDoubleClick"/> event.
 		/// </summary>
 		/// <param name="e">Grid cell event arguments.</param>
-		protected virtual void OnCellDoubleClick(GridViewCellEventArgs e)
+		protected virtual void OnCellDoubleClick(GridViewCellMouseEventArgs e)
 		{
 			Properties.TriggerEvent(CellDoubleClickEvent, this, e);
 		}
@@ -441,6 +441,16 @@ namespace Eto.Forms
 		}
 
 		/// <summary>
+		/// Gets or sets the border type
+		/// </summary>
+		/// <value>The border.</value>
+		public BorderType Border
+		{
+			get { return Handler.Border; }
+			set { Handler.Border = value; }
+		}
+
+		/// <summary>
 		/// Selects the row to the specified <paramref name="row"/>, clearing other selections
 		/// </summary>
 		/// <param name="row">Row to select</param>
@@ -485,6 +495,18 @@ namespace Eto.Forms
 		}
 
 		/// <summary>
+		/// Commits a current edit operation and sets the current value to the model.
+		/// </summary>
+		/// <returns><c>true</c>, if edit was commited or if there was no current edit operation, <c>false</c> if the commit was cancelled..</returns>
+		public bool CommitEdit() => Handler.CommitEdit();
+
+		/// <summary>
+		/// Cancels the current edit operation and reverts the cell value to the value in the model.
+		/// </summary>
+		/// <returns><c>true</c>, if edit was canceled or there was no current edit operation, <c>false</c> if the cancel was aborted.</returns>
+		public bool CancelEdit() => Handler.CancelEdit();
+
+		/// <summary>
 		/// Scrolls to show the specified row in the view
 		/// </summary>
 		/// <param name="row">Row to scroll to.</param>
@@ -522,12 +544,12 @@ namespace Eto.Forms
 			/// <summary>
 			/// Raises the cell click event.
 			/// </summary>
-			void OnCellClick(Grid widget, GridViewCellEventArgs e);
+			void OnCellClick(Grid widget, GridViewCellMouseEventArgs e);
 
 			/// <summary>
 			/// Raises the cell double click event.
 			/// </summary>
-			void OnCellDoubleClick(Grid widget, GridViewCellEventArgs e);
+			void OnCellDoubleClick(Grid widget, GridViewCellMouseEventArgs e);
 
 			/// <summary>
 			/// Raises the selection changed event.
@@ -569,7 +591,7 @@ namespace Eto.Forms
 			/// <summary>
 			/// Raises the cell click event.
 			/// </summary>
-			public void OnCellClick(Grid widget, GridViewCellEventArgs e)
+			public void OnCellClick(Grid widget, GridViewCellMouseEventArgs e)
 			{
 				widget.Platform.Invoke(() => widget.OnCellClick(e));
 			}
@@ -577,7 +599,7 @@ namespace Eto.Forms
 			/// <summary>
 			/// Raises the cell double click event.
 			/// </summary>
-			public void OnCellDoubleClick(Grid widget, GridViewCellEventArgs e)
+			public void OnCellDoubleClick(Grid widget, GridViewCellMouseEventArgs e)
 			{
 				widget.Platform.Invoke(() => widget.OnCellDoubleClick(e));
 			}
@@ -654,6 +676,12 @@ namespace Eto.Forms
 			GridLines GridLines { get; set; }
 
 			/// <summary>
+			/// Gets or sets the border type
+			/// </summary>
+			/// <value>The border.</value>
+			BorderType Border { get; set; }
+
+			/// <summary>
 			/// Selects the row to the specified <paramref name="row"/>, clearing other selections
 			/// </summary>
 			/// <param name="row">Row to select</param>
@@ -681,6 +709,18 @@ namespace Eto.Forms
 			/// <param name="row">Row to edit</param>
 			/// <param name="column">Column to edit</param>
 			void BeginEdit(int row, int column);
+
+			/// <summary>
+			/// Commits a current edit operation and sets the current value to the model.
+			/// </summary>
+			/// <returns><c>true</c>, if edit was commited or there was no current edit operation, <c>false</c> if the commit was cancelled..</returns>
+			bool CommitEdit();
+
+			/// <summary>
+			/// Cancels the current edit operation and reverts the cell value to the value in the model.
+			/// </summary>
+			/// <returns><c>true</c>, if edit was canceled or there was no current edit operation, <c>false</c> if the cancel was aborted.</returns>
+			bool CancelEdit();
 
 			/// <summary>
 			/// Scrolls to show the specified row in the view

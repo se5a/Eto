@@ -4,11 +4,14 @@ using System.ComponentModel;
 using System.Globalization;
 using Eto.Forms;
 using Eto.Drawing;
+using System.Threading.Tasks;
 
 namespace Eto.Test
 {
 	public class MainForm : Form
 	{
+		internal static TrayIndicator tray;
+
 		TextArea eventLog;
 		Panel contentContainer;
 		Navigation navigation;
@@ -109,6 +112,8 @@ namespace Eto.Test
 					Position = 200,
 					FixedPanel = SplitterFixedPanel.Panel1,
 					Panel1 = SectionList.Control,
+					Panel1MinimumSize = 150,
+					Panel2MinimumSize = 300,
 					// for now, don't show log in mobile
 					Panel2 = Platform.IsMobile ? contentContainer : RightPane()
 				};
@@ -187,12 +192,18 @@ namespace Eto.Test
 				fileCommand.Executed += (sender, e) => Log.Write(sender, "Executed");
 				var editCommand = new Command { MenuText = "Edit Command", Shortcut = Keys.Shift | Keys.E };
 				editCommand.Executed += (sender, e) => Log.Write(sender, "Executed");
-				var viewCommand = new Command { MenuText = "View Command", Shortcut = Keys.Control | Keys.V };
+				var viewCommand = new Command { MenuText = "View Command", Shortcut = Keys.Control | Keys.Shift | Keys.V };
 				viewCommand.Executed += (sender, e) => Log.Write(sender, "Executed");
 				var windowCommand = new Command { MenuText = "Window Command" };
 				windowCommand.Executed += (sender, e) => Log.Write(sender, "Executed");
 
-				var file = new ButtonMenuItem { Text = "&File", Items = { fileCommand } };
+				var crashCommand = new Command { MenuText = "Test Exception" };
+				crashCommand.Executed += (sender, e) =>
+				{
+					throw new InvalidOperationException("This is the exception message");
+				};
+
+				var file = new ButtonMenuItem { Text = "&File", Items = { fileCommand, crashCommand } };
 				var edit = new ButtonMenuItem { Text = "&Edit", Items = { editCommand } };
                 var view = new ButtonMenuItem { Text = "&View", Items = { viewCommand } };
 				var window = new ButtonMenuItem { Text = "&Window", Order = 1000, Items = { windowCommand } };
@@ -266,6 +277,8 @@ namespace Eto.Test
 					ToolBar.Items.Add(new SeparatorToolItem { Type = SeparatorToolItemType.Divider });
 					ToolBar.Items.Add(new CheckToolItem { Text = "Check", Image = TestIcons.TestImage });
 				}
+				ToolBar.Items.Add(new SeparatorToolItem { Type = SeparatorToolItemType.Space });
+				ToolBar.Items.Add(new ButtonToolItem { Text = "Click Me", Image = TestIcons.Logo });
 				if (Platform.Supports<RadioToolItem>())
 				{
 					ToolBar.Items.Add(new SeparatorToolItem { Type = SeparatorToolItemType.FlexibleSpace });
@@ -275,6 +288,21 @@ namespace Eto.Test
 				}
 			}
 
+			if (Platform.Supports<TrayIndicator>())
+			{
+				tray = new TrayIndicator();
+				tray.Icon = TestIcons.TestIcon;
+				tray.Title = "Eto Test App";
+
+				var menu = new ContextMenu();
+				menu.Items.Add(about);
+				menu.Items.Add(quit);
+				tray.SetMenu(menu);
+
+                tray.Activated += (o, e) => MessageBox.Show("Hello World!!!");
+
+				tray.Show();
+			}
 		}
 
 		protected override void OnWindowStateChanged(EventArgs e)
@@ -285,8 +313,12 @@ namespace Eto.Test
 
 		protected override void OnClosing(CancelEventArgs e)
 		{
+			if (Platform.Supports<TrayIndicator>())
+				tray.Hide();
+
 			base.OnClosing(e);
 			Log.Write(this, "Closing");
+
 			/*
 			 * Note that on OS X, windows usually close, but the application will keep running.  It is
 			 * usually better to handle the Application.OnTerminating event instead.

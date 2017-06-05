@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
+using Eto.Drawing;
 
 namespace Eto
 {
@@ -66,7 +67,7 @@ namespace Eto
 	/// Flags to specify which global features are supported for a platform
 	/// </summary>
 	[Flags]
-	public enum PlatformFeatureFlags
+	public enum PlatformFeatures
 	{
 		/// <summary>
 		/// No extra features supported.
@@ -85,6 +86,15 @@ namespace Eto
 		/// (most often not rendering with transparent background, thus overpainting the drawable).
 		/// </summary>
 		DrawableWithTransparentContent = 1 << 1,
+
+		/// <summary>
+		/// Specifies the <see cref="Forms.Control.TabIndex"/> is based on the logical tree, not the visual tree.
+		/// Both GTK and WinForms do not support creating a custom tab focus and is based on the direct containers.
+		/// 
+		/// For example, setting a TabIndex for controls in DynamicLayout and StackLayout might not behave as expected on platforms
+		/// that do not support this.
+		/// </summary>
+		TabIndexWithCustomContainers = 1 << 2
 	}
 
 	/// <summary>
@@ -273,9 +283,9 @@ namespace Eto
 		/// Gets the supported features of the platform.
 		/// </summary>
 		/// <value>The supported features.</value>
-		public virtual PlatformFeatureFlags SupportedFeatures
+		public virtual PlatformFeatures SupportedFeatures
 		{
-			get { return PlatformFeatureFlags.None; }
+			get { return PlatformFeatures.None; }
 		}
 
 		/// <summary>
@@ -606,6 +616,27 @@ namespace Eto
 				return instance.Value != this ? new PlatformContext(this) : null;
 			}
 		}
+
+		Func<Matrix.IHandler> createMatrix;
+		internal Func<Matrix.IHandler> CreateMatrix => createMatrix ?? (createMatrix = Find<Matrix.IHandler>());
+
+		Func<GraphicsPath.IHandler> createGraphicsPath;
+		internal Func<GraphicsPath.IHandler> CreateGraphicsPath => createGraphicsPath ?? (createGraphicsPath = Find<GraphicsPath.IHandler>());
+
+		Pen.IHandler penHandler;
+		internal Pen.IHandler PenHandler => penHandler ?? (penHandler = CreateShared<Pen.IHandler>());
+
+		LinearGradientBrush.IHandler linearGradientBrushHandler;
+		internal LinearGradientBrush.IHandler LinearGradientBrushHandler => linearGradientBrushHandler ?? (linearGradientBrushHandler = CreateShared<LinearGradientBrush.IHandler>());
+
+		RadialGradientBrush.IHandler radialGradientBrushHandler;
+		internal RadialGradientBrush.IHandler RadialGradientBrushHandler => radialGradientBrushHandler ?? (radialGradientBrushHandler = CreateShared<RadialGradientBrush.IHandler>());
+
+		SolidBrush.IHandler solidBrushHandler;
+		internal SolidBrush.IHandler SolidBrushHandler => solidBrushHandler ?? (solidBrushHandler = CreateShared<SolidBrush.IHandler>());
+
+		TextureBrush.IHandler textureBrushHandler;
+		internal TextureBrush.IHandler TextureBrushHandler => textureBrushHandler ?? (textureBrushHandler = CreateShared<TextureBrush.IHandler>());
 
 		/// <summary>
 		/// Invoke the specified action within the context of this platform

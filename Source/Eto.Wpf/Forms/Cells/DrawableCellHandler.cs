@@ -41,24 +41,28 @@ namespace Eto.Wpf.Forms.Cells
 
 			EtoCanvas Create(swc.DataGridCell cell)
 			{
-				var control = new EtoCanvas { Column = this };
-				control.DataContextChanged += (sender, e) =>
+				var control = cell.Content as EtoCanvas;
+				if (control == null)
 				{
-					var ctl = sender as EtoCanvas;
-					ctl.IsSelected = cell.IsSelected;
-					Handler.FormatCell(ctl, cell, ctl.DataContext);
-					ctl.InvalidateVisual();
-				};
-				cell.Selected += (sender, e) =>
-				{
-					control.IsSelected = cell.IsSelected;
-					control.InvalidateVisual();
-				};
-				cell.Unselected += (sender, e) =>
-				{
-					control.IsSelected = cell.IsSelected;
-					control.InvalidateVisual();
-				};
+					control = new EtoCanvas { Column = this };
+					control.DataContextChanged += (sender, e) =>
+					{
+						var ctl = sender as EtoCanvas;
+						ctl.IsSelected = cell.IsSelected;
+						Handler.FormatCell(ctl, cell, ctl.DataContext);
+						ctl.InvalidateVisual();
+					};
+					cell.Selected += (sender, e) =>
+					{
+						control.IsSelected = cell.IsSelected;
+						control.InvalidateVisual();
+					};
+					cell.Unselected += (sender, e) =>
+					{
+						control.IsSelected = cell.IsSelected;
+						control.InvalidateVisual();
+					};
+				}
 				return control;
 			}
 

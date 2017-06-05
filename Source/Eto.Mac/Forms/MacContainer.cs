@@ -2,8 +2,10 @@ using System;
 using Eto.Forms;
 using System.Linq;
 using Eto.Drawing;
+using System.Collections.Generic;
 
 #if XAMMAC2
+using AppKit;
 using Foundation;
 using CoreGraphics;
 using ObjCRuntime;
@@ -74,6 +76,8 @@ namespace Eto.Mac.Forms
 		public override bool Enabled { get; set; }
 
 		public bool InitialLayout { get; private set; }
+
+		public override IEnumerable<Control> VisualControls => Widget.Controls;
 
 		protected override void Initialize()
 		{
@@ -150,22 +154,43 @@ namespace Eto.Mac.Forms
 			LayoutAllChildren();
 		}
 
-		public override void Invalidate()
+		public override void Invalidate(bool invalidateChildren)
 		{
-			base.Invalidate();
-			foreach (var child in Widget.VisualControls)
+			base.Invalidate(invalidateChildren);
+			if (invalidateChildren)
 			{
-				child.Invalidate();
+				foreach (var child in Widget.VisualControls)
+				{
+					child.Invalidate(invalidateChildren);
+				}
 			}
 		}
 
-		public override void Invalidate(Rectangle rect)
+		public override void Invalidate(Rectangle rect, bool invalidateChildren)
 		{
-			base.Invalidate(rect);
-			var screenRect = Widget.RectangleToScreen(rect);
-			foreach (var child in Widget.VisualControls)
+			base.Invalidate(rect, invalidateChildren);
+			if (invalidateChildren)
 			{
-				child.Invalidate(Rectangle.Round(child.RectangleFromScreen(screenRect)));
+				var screenRect = Widget.RectangleToScreen(rect);
+				foreach (var child in Widget.VisualControls)
+				{
+					child.Invalidate(Rectangle.Round(child.RectangleFromScreen(screenRect)), invalidateChildren);
+				}
+			}
+		}
+
+		public override void RecalculateKeyViewLoop(ref NSView last)
+		{
+			foreach (var child in Widget.Controls.OrderBy(c => c.TabIndex))
+			{
+				var handler = child.GetMacControl();
+				if (handler != null)
+				{
+					handler.RecalculateKeyViewLoop(ref last);
+					if (last != null)
+						last.NextKeyView = handler.FocusControl;
+					last = handler.FocusControl;
+				}
 			}
 		}
 	}

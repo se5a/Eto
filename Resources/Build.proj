@@ -6,7 +6,6 @@
         <SourceDir Condition="$(SourceDir) == ''">$(BaseDir)\Source</SourceDir>
         <NugetDir Condition="$(NugetDir) == ''">$(SourceDir)</NugetDir>
         <BuildOutputDir Condition="$(BuildOutoutDir) == ''">$(BaseDir)\BuildOutput</BuildOutputDir>
-		<BuildOutputNet40Dir Condition="$(BuildOutputNet40Dir) == ''">$(BuildOutputDir)\net40\$(Configuration)</BuildOutputNet40Dir>
 		<BuildOutputPCLDir Condition="$(BuildOutputPCLDir) == ''">$(BuildOutputDir)\pcl\$(Configuration)</BuildOutputPCLDir>
 		<BuildOutputNet45Dir Condition="$(BuildOutputNet45Dir) == ''">$(BuildOutputDir)\net45\$(Configuration)</BuildOutputNet45Dir>
 		<BuildOutputMobileDir Condition="$(BuildOutputMobileDir) == ''">$(BuildOutputDir)\mobile\$(Configuration)</BuildOutputMobileDir>
@@ -16,8 +15,8 @@
         <Platform Condition="$(Platform) == '' and '$(OS)' == 'Unix' and Exists('/Library/Frameworks')">Mac</Platform>
         <Platform Condition="$(Platform) == '' and '$(OS)' != 'Unix'">Windows</Platform>
 		<BuildVersion Condition="$(BuildVersion) == ''"></BuildVersion>
-		<XamarinStudioAddinProject>$(SourceDir)\Addins\Eto.Addin.XamarinStudio\Eto.Addin.XamarinStudio.csproj</XamarinStudioAddinProject>
-		<VisualStudioAddinProject>$(SourceDir)\Addins\Eto.Addin.VisualStudio\Eto.Addin.VisualStudio.sln</VisualStudioAddinProject>
+		<XamarinStudioAddinProject>$(SourceDir)\Addins\Eto.Addin.XamarinStudio.sln</XamarinStudioAddinProject>
+		<VisualStudioAddinProject>$(SourceDir)\Addins\Eto.Addin.VisualStudio.sln</VisualStudioAddinProject>
 		<mdtool Condition="$(mdtool) == '' and $(Platform) == 'Linux'">"mdtool"</mdtool>
 		<mdtool Condition="$(mdtool) == '' and $(Platform) == 'Mac'">"/Applications/Xamarin Studio.app/Contents/MacOS/mdtool"</mdtool>
 		<mdtool Condition="$(mdtool) == '' and $(Platform) == 'Windows'">"c:\Program Files (x86)\Xamarin Studio\bin\mdtool.exe"</mdtool>
@@ -61,7 +60,7 @@
         <ItemGroup>
         	<TemplateFiles Include="$(SourceDir)\Addins\Eto.Addin.VisualStudio\**\*.vstemplate" />
         	<TemplateFiles Include="$(SourceDir)\Addins\Eto.Addin.XamarinStudio\**\*.xpt.xml" />
-        	<ProjFiles Include="$(XamarinStudioAddinProject)" />
+        	<ProjFiles Include="$(SourceDir)\Addins\Eto.Addin.XamarinStudio\Eto.Addin.XamarinStudio.csproj" />
         	<ProjFiles Include="$(SourceDir)\Addins\Eto.Addin.XamarinStudio\Eto.Addin.XamarinStudio - nuget.csproj" />
         	<TemplateFiles Include="$(MSBuildThisFileDirectory)\packages.config" />
         </ItemGroup>
@@ -119,11 +118,9 @@
 	
 	<Target Name="Build" DependsOnTargets="UpdateVersion">
     	<!-- using exec since xbuild messes up properties when using msbuild task -->
-    	<Exec Command="xbuild /t:'$(PackageTargets)' /p:'Configuration=$(Configuration);Platform=$(Platform)' '$(SourceDir)\Eto - net40.sln'" Condition="$(Platform) != 'Windows'"/>
     	<Exec Command="xbuild /t:'$(PackageTargets)' /p:'Configuration=$(Configuration);Platform=$(Platform)' '$(SourceDir)\Eto - net45.sln'" Condition="$(Platform) != 'Windows'"/>
     	<Exec Command="xbuild /t:'$(PackageTargets)' /p:'Configuration=$(Configuration)' '$(SourceDir)\Eto.iOS\Eto.iOS.csproj'" Condition="$(IncludeXamiOS) == 'true'"/>
     	
-    	<MSBuild Projects="$(SourceDir)\Eto - net40.sln" Targets="$(PackageTargets)" Properties="Configuration=$(Configuration);Platform=$(Platform)" Condition="$(Platform) == 'Windows'"/>
     	<MSBuild Projects="$(SourceDir)\Eto - net45.sln" Targets="$(PackageTargets)" Properties="Configuration=$(Configuration);Platform=$(Platform)" Condition="$(Platform) == 'Windows'"/>
     	
 		<!-- build XamMac separately if it hasn't been built on mac -->
@@ -134,7 +131,7 @@
 	
     <Target Name="Package" DependsOnTargets="Build">
 		<!-- Nuget has problems with files that have no extension -->
-		<Copy SourceFiles="$(BuildOutputNet40Dir)\LICENSE" DestinationFiles="$(BuildOutputNet40Dir)\LICENSE.txt" />
+		<Copy SourceFiles="$(BuildOutputNet45Dir)\LICENSE" DestinationFiles="$(BuildOutputNet45Dir)\LICENSE.txt" />
 
     	<ItemGroup>
 			<Package Include="Eto">
@@ -184,7 +181,7 @@
     	<Exec Command="xbuild /t:'BuildPackage' /p:'ProjectPath=$(BaseDir);ProjectFile=nuspec/%(Package.Identity).nuspec;TargetDir=$(PackageOutputDir);NuspecInfoAssembly=%(Assembly)' '$(MSBuildProjectFile)'" Condition="$(Platform) != 'Windows' and Exists('%(Assembly)')"/>
     	<MSBuild Targets="BuildPackage" Properties="ProjectPath=$(BaseDir);ProjectFile=nuspec/%(Package.Identity).nuspec;NuspecInfoAssembly=%(Assembly);TargetDir=$(PackageOutputDir)" Projects="$(MSBuildProjectFile)" Condition="$(Platform) == 'Windows' and Exists('%(Assembly)')"/>
 
-		<GetAssemblyInfo AssemblyFileName="$(BuildOutputNet40Dir)\Eto.dll">
+		<GetAssemblyInfo AssemblyFileName="$(BuildOutputNet45Dir)\Eto.dll">
 			<Output TaskParameter="AssemblyInformationalVersion" PropertyName="AssemblyVersion" />
 		</GetAssemblyInfo>
 		
@@ -198,8 +195,9 @@
     </Target>
     <Target Name="BuildAddins">
     	<!-- addins -->
-    	<Exec Command="xbuild /t:'RestorePackages' /p:'Configuration=$(Configuration)' '$(XamarinStudioAddinProject)'" Condition="$(Platform) != 'Windows'"/>
-    	<Exec Command="xbuild /t:'Build' /p:'Configuration=$(Configuration)' '$(XamarinStudioAddinProject)'" Condition="$(Platform) != 'Windows'"/>
+    	<Exec Command="$(NuGetCommand) restore $(XamarinStudioAddinProject)" Condition="$(Platform) != 'Windows'" />
+    	<!--Exec Command="xbuild /t:'RestorePackages' /p:'Configuration=$(Configuration)' '$(XamarinStudioAddinProject)'" Condition="$(Platform) != 'Windows'"/-->
+    	<Exec Command="xbuild /t:'Build' /p:'Configuration=XSRelease' '$(XamarinStudioAddinProject)'" Condition="$(Platform) != 'Windows'"/>
     	<!--
     	<MSBuild Projects="$(XamarinStudioAddinProject)" Targets="RestorePackages" Properties="Configuration=$(Configuration)" Condition="$(Platform) == 'Windows'" />
     	<MSBuild Projects="$(XamarinStudioAddinProject)" Targets="Build" Properties="Configuration=$(Configuration)" Condition="$(Platform) == 'Windows'" />
@@ -212,7 +210,7 @@
     	<MSBuild Projects="$(VisualStudioAddinProject)" Targets="Build" Properties="Configuration=$(Configuration)" Condition="$(Platform) == 'Windows'" />
     </Target>
     <Target Name="Publish">
-		<GetAssemblyInfo AssemblyFileName="$(BuildOutputNet40Dir)\Eto.dll">
+		<GetAssemblyInfo AssemblyFileName="$(BuildOutputNet45Dir)\Eto.dll">
 			<Output TaskParameter="AssemblyInformationalVersion" PropertyName="AssemblyVersion" />
 		</GetAssemblyInfo>
 
@@ -238,7 +236,7 @@
 		<RemoveDir Directories="$(BuildOutputDir)"/>
 		<RemoveDir Directories="$(SourceDir)\packages"/>
 		<RemoveDir Directories="$(BaseDir)\Samples\packages"/>
-		<RemoveDir Directories="$(SourceDir)\Addins\Eto.Addin.VisualStudio\Eto.Addin.VisualStudio\packages"/>
+		<RemoveDir Directories="$(SourceDir)\Addins\packages"/>
 	</Target>
 	
 	<Target Name="_GetVersion" DependsOnTargets="BuildUtilities">

@@ -1,7 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections;
+using Eto.Drawing;
 
 namespace Eto.Forms
 {
@@ -49,6 +50,96 @@ namespace Eto.Forms
 			this.Item = item;
 		}
 	}
+
+	/// <summary>
+	/// Event arguments for cell-based events of a <see cref="GridView"/> triggered by the mouse.
+	/// </summary>
+	public class GridViewCellMouseEventArgs : MouseEventArgs
+	{
+		/// <summary>
+		/// Gets the grid column that triggered the event.
+		/// </summary>
+		/// <value>The grid column.</value>
+		public GridColumn GridColumn { get; private set; }
+
+		/// <summary>
+		/// Gets the row that triggered the event, or -1 if no row.
+		/// </summary>
+		/// <value>The grid row.</value>
+		public int Row { get; private set; }
+
+		/// <summary>
+		/// Gets the index of the column that triggered the event, or -1 if no column.
+		/// </summary>
+		/// <value>The column index.</value>
+		public int Column { get; private set; }
+
+		/// <summary>
+		/// Gets the item of the row that triggered the event, or null if there was no item.
+		/// </summary>
+		/// <value>The row item.</value>
+		public object Item { get; private set; }
+
+		/// <summary>
+		/// Initializes a new instance of the GridViewCellMouseEventArgs class.
+		/// </summary>
+		/// <param name="gridColumn">Grid column that triggered the event.</param>
+		/// <param name="row">The row that triggered the event, or -1 if no row.</param>
+		/// <param name="column">Column that triggered the event, or -1 if no column.</param>
+		/// <param name="item">Item of the row that triggered the event, or null if no item.</param>
+		/// <param name="buttons">Mouse buttons that are pressed during the event</param>
+		/// <param name="modifiers">Key modifiers currently pressed</param>
+		/// <param name="location">Location of the mouse cursor in the grid</param>
+		/// <param name="delta">Delta of the scroll wheel.</param>
+		/// <param name="pressure">Pressure of a stylus or touch, if applicable. 1.0f for full pressure or not supported</param>
+		public GridViewCellMouseEventArgs(GridColumn gridColumn, int row, int column, object item, MouseButtons buttons, Keys modifiers, PointF location, SizeF? delta = null, float pressure = 1.0f)
+			: base(buttons, modifiers, location, delta, pressure)
+		{
+			this.GridColumn = gridColumn;
+			this.Row = row;
+			this.Column = column;
+			this.Item = item;
+		}
+	}
+
+	/// <summary>
+	/// Information of a cell in the <see cref="TreeGridView"/>
+	/// </summary>
+	public class GridCell
+	{
+		/// <summary>
+		/// Gets the item associated with the row of the cell.
+		/// </summary>
+		/// <value>The row item.</value>
+		public object Item { get; }
+
+		/// <summary>
+		/// Gets the index of the row.
+		/// </summary>
+		/// <value>The index of the row.</value>
+		public int RowIndex { get; }
+
+		/// <summary>
+		/// Gets the column of the cell, or null
+		/// </summary>
+		/// <value>The column.</value>
+		public GridColumn Column { get; }
+
+		/// <summary>
+		/// Gets the index of the column.
+		/// </summary>
+		/// <value>The index of the column.</value>
+		public int ColumnIndex { get; }
+
+		internal GridCell(object item, GridColumn column, int columnIndex, int rowIndex)
+		{
+			Item = item;
+			Column = column;
+			ColumnIndex = columnIndex;
+			RowIndex = rowIndex;
+		}
+	}
+
 
 	/// <summary>
 	/// Grid view with a data store of a specific type
@@ -219,6 +310,22 @@ namespace Eto.Forms
 		}
 
 		/// <summary>
+		/// Gets the node at a specified location from the origin of the control
+		/// </summary>
+		/// <remarks>
+		/// Useful for determining which node is under the mouse cursor.
+		/// </remarks>
+		/// <returns>The item from the data store that is displayed at the specified location</returns>
+		/// <param name="location">Point to find the node</param>
+		public GridCell GetCellAt(PointF location)
+		{
+			int column;
+			int row;
+			var item = Handler.GetCellAt(location, out column, out row);
+			return new GridCell(item, column >= 0 ? Columns[column] : null, column, row);
+		}
+
+		/// <summary>
 		/// Gets a new selection preserver instance for the grid.
 		/// </summary>
 		/// <remarks>
@@ -323,6 +430,18 @@ namespace Eto.Forms
 			/// </remarks>
 			/// <param name="rows">Rows to update.</param>
 			void ReloadData(IEnumerable<int> rows);
+
+			/// <summary>
+			/// Gets the node at a specified point from the origin of the control
+			/// </summary>
+			/// <remarks>
+			/// Useful for determining which node is under the mouse cursor.
+			/// </remarks>
+			/// <returns>The item from the data store that is displayed at the specified location</returns>
+			/// <param name="location">Point to find the node</param>
+			/// <param name="row">Row under the specified location</param>
+			/// <param name="column">Column under the specified location</param>
+			object GetCellAt(PointF location, out int column, out int row);
 		}
 	}
 }

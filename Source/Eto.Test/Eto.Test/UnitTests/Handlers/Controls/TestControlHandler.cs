@@ -1,6 +1,7 @@
 ﻿using System;
 using Eto.Forms;
 using Eto.Drawing;
+using System.Collections.Generic;
 
 namespace Eto.Test.UnitTests.Handlers.Controls
 {
@@ -23,12 +24,12 @@ namespace Eto.Test.UnitTests.Handlers.Controls
 			AutoSize = true;
 		}
 
-		public virtual void Invalidate()
+		public virtual void Invalidate(bool invalidateChildren)
 		{
-			Invalidate(new Rectangle(Point.Empty, Size));
+			Invalidate(new Rectangle(Point.Empty, Size), invalidateChildren);
 		}
 
-		public virtual void Invalidate(Rectangle rect)
+		public virtual void Invalidate(Rectangle rect, bool invalidateChildren)
 		{
 		}
 
@@ -174,9 +175,30 @@ namespace Eto.Test.UnitTests.Handlers.Controls
 			}
 		}
 
+		public int TabIndex
+		{
+			get
+			{
+				throw new NotImplementedException();
+			}
+
+			set
+			{
+				throw new NotImplementedException();
+			}
+		}
+
+		public IEnumerable<Control> VisualControls
+		{
+			get
+			{
+				throw new NotImplementedException();
+			}
+		}
+
 		public virtual void OnShown()
 		{
-			Invalidate();
+			Invalidate(false);
 		}
 
 		public virtual Size GetPreferredSize()

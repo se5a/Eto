@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Eto.Wpf.Forms.Cells;
@@ -16,19 +16,26 @@ namespace Eto.Wpf.Forms.Controls
 {
 	public class EtoDataGrid : swc.DataGrid
 	{
+		public IWpfFrameworkElement Handler { get; set; }
+
 		public new void BeginUpdateSelectedItems()
 		{
 			base.BeginUpdateSelectedItems();
 		}
+
 		public new void EndUpdateSelectedItems()
 		{
 			base.EndUpdateSelectedItems();
 		}
+
+		protected override sw.Size MeasureOverride(sw.Size constraint)
+		{
+			return Handler?.MeasureOverride(constraint, base.MeasureOverride) ?? base.MeasureOverride(constraint);
+		}
 	}
 
 
-	public abstract class GridHandler<TControl, TWidget, TCallback> : WpfControl<TControl, TWidget, TCallback>, Grid.IHandler, IGridHandler
-		where TControl : EtoDataGrid
+	public abstract class GridHandler<TWidget, TCallback> : WpfControl<EtoDataGrid, TWidget, TCallback>, Grid.IHandler, IGridHandler
 		where TWidget : Grid
 		where TCallback : Grid.ICallback
 	{
@@ -37,10 +44,15 @@ namespace Eto.Wpf.Forms.Controls
 		protected bool SkipSelectionChanged { get; set; }
 		protected swc.DataGridColumn CurrentColumn { get; set; }
 
+		protected override sw.Size DefaultSize => new sw.Size(100, 100);
+		public override bool UseMousePreview => true;
+		public override bool UseKeyPreview => true;
+
 		protected GridHandler()
 		{
-			Control = (TControl)new EtoDataGrid
+			Control = new EtoDataGrid
 			{
+				Handler = this,
 				HeadersVisibility = swc.DataGridHeadersVisibility.Column,
 				AutoGenerateColumns = false,
 				CanUserDeleteRows = false,
@@ -82,41 +94,10 @@ namespace Eto.Wpf.Forms.Controls
 					// handled by each cell after value is set with the CellEdited method
 					break;
 				case Grid.CellClickEvent:
-					Control.PreviewMouseLeftButtonDown += (sender, e) =>
-					{
-						var dep = e.OriginalSource as sw.DependencyObject;
-						while (dep != null && !(dep is swc.DataGridCell))
-							dep = swm.VisualTreeHelper.GetParent(dep);
-
-						var cell = dep as swc.DataGridCell;
-						while (dep != null && !(dep is swc.DataGridRow))
-							dep = swm.VisualTreeHelper.GetParent(dep);
-
-						var row = dep as swc.DataGridRow;
-
-						int rowIndex;
-						if (row != null && (rowIndex = row.GetIndex()) >= 0)
-						{
-							var columnIndex = cell.Column == null ? -1 : cell.Column.DisplayIndex;
-
-							var item = Control.Items[rowIndex];
-							var column = columnIndex == -1 || columnIndex >= Widget.Columns.Count ? null : Widget.Columns[columnIndex];
-							Callback.OnCellClick(Widget, new GridViewCellEventArgs(column, rowIndex, columnIndex, item));
-						}
-					};
+					Control.PreviewMouseDown += (sender, e) => Callback.OnCellClick(Widget, CreateCellMouseArgs(e.OriginalSource, e));
 					break;
 				case Grid.CellDoubleClickEvent:
-					Control.MouseDoubleClick += (sender, e) =>
-					{
-						int rowIndex;
-						if ((rowIndex = Control.SelectedIndex) >= 0)
-						{
-							var columnIndex = Control.CurrentColumn == null ? -1 : Control.CurrentColumn.DisplayIndex;
-							var item = Control.SelectedItem;
-							var column = columnIndex == -1 || columnIndex >= Widget.Columns.Count ? null : Widget.Columns[columnIndex];
-							Callback.OnCellDoubleClick(Widget, new GridViewCellEventArgs(column, rowIndex, columnIndex, item));
-						}
-					};
+					Control.MouseDoubleClick += (sender, e) => Callback.OnCellDoubleClick(Widget, CreateCellMouseArgs(e.OriginalSource, e));
 					break;
 				case Grid.SelectionChangedEvent:
 					Control.SelectedCellsChanged += (sender, e) =>
@@ -132,6 +113,41 @@ namespace Eto.Wpf.Forms.Controls
 					base.AttachEvent(id);
 					break;
 			}
+		}
+
+		GridViewCellMouseEventArgs CreateCellMouseArgs(object originalSource, swi.MouseButtonEventArgs ea)
+		{
+			swc.DataGridCell cell;
+			var row = GetRowOfElement(originalSource, out cell);
+
+			int rowIndex = row?.GetIndex() ?? -1;
+			var columnIndex = cell?.Column?.DisplayIndex ?? -1;
+
+			var item = row?.Item;
+			var column = columnIndex == -1 || columnIndex >= Widget.Columns.Count ? null : Widget.Columns[columnIndex];
+
+			var buttons = ea.GetEtoButtons();
+			var modifiers = swi.Keyboard.Modifiers.ToEto();
+			var location = ea.GetPosition(ContainerControl).ToEto();
+			return new GridViewCellMouseEventArgs(column, rowIndex, columnIndex, item, buttons, modifiers, location);
+		}
+
+		swc.DataGridRow GetRowOfElement(object source, out swc.DataGridCell cell)
+		{
+			// when clicking on labels, etc this will be a content element
+			while (source is sw.FrameworkContentElement)
+				source = ((sw.FrameworkContentElement)source).Parent;
+
+			// VisualTreeHelper will throw if not a Visual, we can return null here
+			var dep = source as swm.Visual;
+			while (dep != null && !(dep is swc.DataGridCell))
+				dep = swm.VisualTreeHelper.GetParent(dep) as swm.Visual;
+
+			cell = dep as swc.DataGridCell;
+			while (dep != null && !(dep is swc.DataGridRow))
+				dep = swm.VisualTreeHelper.GetParent(dep) as swm.Visual;
+
+			return dep as swc.DataGridRow;
 		}
 
 		public bool ShowHeader
@@ -163,7 +179,7 @@ namespace Eto.Wpf.Forms.Controls
 
 		protected class ColumnCollection : EnumerableChangedHandler<GridColumn, GridColumnCollection>
 		{
-			public GridHandler<TControl, TWidget, TCallback> Handler { get; set; }
+			public GridHandler<TWidget, TCallback> Handler { get; set; }
 
 			public override void AddItem(GridColumn item)
 			{
@@ -303,6 +319,10 @@ namespace Eto.Wpf.Forms.Controls
 			Control.BeginEdit();
 		}
 
+		public bool CommitEdit() => Control.CommitEdit();
+
+		public bool CancelEdit() => Control.CancelEdit();
+
 		public virtual sw.FrameworkElement SetupCell(IGridColumnHandler column, sw.FrameworkElement defaultContent)
 		{
 			return defaultContent;
@@ -326,9 +346,7 @@ namespace Eto.Wpf.Forms.Controls
 			{
 				get
 				{
-					if (font == null)
-						font = new Font(new FontHandler(Cell));
-					return font;
+					return font ?? (font = Cell.GetEtoFont());
 				}
 				set
 				{
@@ -341,12 +359,11 @@ namespace Eto.Wpf.Forms.Controls
 			{
 				get
 				{
-					var brush = Cell.Background as swm.SolidColorBrush;
-					return brush != null ? brush.Color.ToEto() : Colors.White;
+					return Cell.Background.ToEtoColor();
 				}
 				set
 				{
-					Cell.Background = new swm.SolidColorBrush(value.ToWpf());
+					Cell.Background = value.ToWpfBrush(Cell.Background);
 				}
 			}
 
@@ -354,12 +371,11 @@ namespace Eto.Wpf.Forms.Controls
 			{
 				get
 				{
-					var brush = Cell.Foreground as swm.SolidColorBrush;
-					return brush != null ? brush.Color.ToEto() : Colors.Black;
+					return Cell.Foreground.ToEtoColor();
 				}
 				set
 				{
-					Cell.Foreground = new swm.SolidColorBrush(value.ToWpf());
+					Cell.Foreground = value.ToWpfBrush(Cell.Foreground);
 				}
 			}
 		}
@@ -381,20 +397,20 @@ namespace Eto.Wpf.Forms.Controls
 			RestoreColumnFocus();
 		}
 
-		public override void Invalidate()
+		public override void Invalidate(bool invalidateChildren)
 		{
 			SaveColumnFocus();
 			Control.Items.Refresh();
 			RestoreColumnFocus();
-			base.Invalidate();
+			base.Invalidate(invalidateChildren);
 		}
 
-		public override void Invalidate(Rectangle rect)
+		public override void Invalidate(Rectangle rect, bool invalidateChildren)
 		{
 			SaveColumnFocus();
 			Control.Items.Refresh();
 			RestoreColumnFocus();
-			base.Invalidate(rect);
+			base.Invalidate(rect, invalidateChildren);
 		}
 
 		public virtual void FormatCell(IGridColumnHandler column, ICellHandler cell, sw.FrameworkElement element, swc.DataGridCell gridcell, object dataItem)
@@ -414,7 +430,8 @@ namespace Eto.Wpf.Forms.Controls
 		protected void RestoreColumnFocus()
 		{
 			Control.CurrentColumn = null;
-			Control.CurrentCell = new swc.DataGridCellInfo(Control.SelectedItem, CurrentColumn ?? Control.CurrentColumn ?? Control.Columns[0]);
+			if (Control.Columns.Count > 0)
+				Control.CurrentCell = new swc.DataGridCellInfo(Control.SelectedItem, CurrentColumn ?? Control.CurrentColumn ?? Control.Columns[0]);
 			CurrentColumn = null;
 		}
 
@@ -482,6 +499,14 @@ namespace Eto.Wpf.Forms.Controls
 						break;
 				}
 			}
+		}
+
+		static object Border_Key = new object();
+
+		public BorderType Border
+		{
+			get { return Widget.Properties.Get(Border_Key, BorderType.Bezel); }
+			set { Widget.Properties.Set(Border, value, () => Control.SetEtoBorderType(value)); }
 		}
 
 		public void ReloadData(IEnumerable<int> rows)

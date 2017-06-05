@@ -52,16 +52,23 @@ namespace Eto.Mac.Forms
 		{
 		}
 
+		public bool? CanFocus { get; set; } = true;
+
+		public override bool CanBecomeKeyWindow => CanFocus ?? base.CanBecomeKeyWindow;
+
 		public bool DisableCenterParent { get; set; }
+
+		public NSWindow OwnerWindow { get; set; }
 
 		public override void Center()
 		{
 			if (DisableCenterParent)
 				return;
 			// implement centering to parent if there is a parent window for this one..
-			if (ParentWindow != null)
+			var window = OwnerWindow ?? ParentWindow;
+			if (window != null)
 			{
-				var parentFrame = ParentWindow.Frame;
+				var parentFrame = window.Frame;
 				var frame = Frame;
 				var location = new CGPoint((parentFrame.Width - frame.Width) / 2 + parentFrame.X, (parentFrame.Height - frame.Height) / 2 + parentFrame.Y);
 				SetFrameOrigin(location);
@@ -85,9 +92,22 @@ namespace Eto.Mac.Forms
 			}
 			Handler.Callback.OnWindowStateChanged(Handler.Widget, EventArgs.Empty);
 		}
+
+		public override void RecalculateKeyViewLoop()
+		{
+			base.RecalculateKeyViewLoop();
+
+			NSView last = null;
+			Handler?.RecalculateKeyViewLoop(ref last);
+		}
 	}
 
-	public interface IMacWindow
+	class EtoContentView : NSView, IMacControl
+	{
+		public WeakReference WeakHandler { get; set; }
+	}
+
+	public interface IMacWindow : IMacContainer
 	{
 		Rectangle? RestoreBounds { get; set; }
 
@@ -96,8 +116,6 @@ namespace Eto.Mac.Forms
 		NSMenu MenuBar { get; }
 
 		NSObject FieldEditorObject { get; set; }
-
-		Size MinimumSize { get; }
 
 		bool CloseWindow(Action<CancelEventArgs> closing = null);
 
@@ -214,35 +232,13 @@ namespace Eto.Mac.Forms
 		static void HandleDidBecomeKey(object sender, EventArgs e)
 		{
 			var handler = GetHandler(sender) as MacWindow<TControl,TWidget,TCallback>;
-			if (handler == null)
-				return;
-			if (handler.MenuBar != null)
-			{
-				var ptr = Messaging.IntPtr_objc_msgSend(NSApplication.SharedApplication.Handle, selMainMenu);
-				if (Runtime.TryGetNSObject(ptr) == null)
-				{
-					// it's a native menu, so let's hold on to it till we resign key of the form
-					MacExtensions.Retain(ptr);
-					handler.oldMenu = ptr;
-				}
-				NSApplication.SharedApplication.MainMenu = handler.MenuBar;
-			}
-			else
-				handler.oldMenu = IntPtr.Zero;
+			handler?.SetMenu();
 		}
 
 		static void HandleDidResignKey(object sender, EventArgs e)
 		{
 			var handler = GetHandler(sender) as MacWindow<TControl,TWidget,TCallback>;
-			if (handler == null)
-				return;
-			if (handler.oldMenu != IntPtr.Zero)
-			{
-				// restore old native menu
-				Messaging.void_objc_msgSend_IntPtr(NSApplication.SharedApplication.Handle, selSetMainMenu, handler.oldMenu);
-				MacExtensions.Release(handler.oldMenu);
-				handler.oldMenu = IntPtr.Zero;
-			}
+			handler?.RestoreMenu();
 		}
 
 		static bool HandleShouldZoom(NSWindow window, CGRect newFrame)
@@ -431,7 +427,7 @@ namespace Eto.Mac.Forms
 			var myWindow = Control as EtoWindow;
 			if (myWindow != null)
 				myWindow.Handler = this;
-			Control.ContentView = new NSView();
+			Control.ContentView = new EtoContentView { WeakHandler = new WeakReference(this) };
 			//Control.ContentMinSize = new System.Drawing.SizeF(0, 0);
 			Control.ContentView.AutoresizingMask = NSViewResizingMask.HeightSizable | NSViewResizingMask.WidthSizable;
 			Control.ReleasedWhenClosed = false;
@@ -578,9 +574,43 @@ namespace Eto.Mac.Forms
 			{
 				menuBar = value;
 				if (Control.IsKeyWindow)
+					SetMenu();
+			}
+		}
+
+		void SetMenu()
+		{
+			if (MenuBar != null)
+			{
+				// if not zero, it's already saved
+				if (oldMenu == IntPtr.Zero)
 				{
-					NSApplication.SharedApplication.MainMenu = (NSMenu)value.ControlObject;
+					oldMenu = Messaging.IntPtr_objc_msgSend(NSApplication.SharedApplication.Handle, selMainMenu);
+					if (oldMenu != IntPtr.Zero)
+					{
+						// remember old native menu so we can restore it later
+						MacExtensions.Retain(oldMenu);
+					}
 				}
+
+				NSApplication.SharedApplication.MainMenu = MenuBar;
+			}
+			else
+			{
+				// restore the menu since we no longer have a menu specific to this window.
+				RestoreMenu();
+			}
+
+		}
+
+		void RestoreMenu()
+		{
+			if (oldMenu != IntPtr.Zero)
+			{
+				// restore old native menu
+				Messaging.void_objc_msgSend_IntPtr(NSApplication.SharedApplication.Handle, selSetMainMenu, oldMenu);
+				MacExtensions.Release(oldMenu);
+				oldMenu = IntPtr.Zero;
 			}
 		}
 

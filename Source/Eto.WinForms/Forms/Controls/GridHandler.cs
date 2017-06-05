@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using swf = System.Windows.Forms;
 using Eto.Forms;
 using System.Linq;
@@ -218,21 +218,23 @@ namespace Eto.WinForms.Forms.Controls
 					};
 					break;
 				case Grid.CellClickEvent:
-					Control.CellClick += (sender, e) =>
+					Control.CellMouseClick += (sender, e) =>
 					{
 						var item = GetItemAtRow(e.RowIndex);
 						var column = Widget.Columns[e.ColumnIndex];
-						Callback.OnCellClick(Widget, new GridViewCellEventArgs(column, e.RowIndex, e.ColumnIndex, item));
+						var location = PointFromScreen(Mouse.Position); // e.Location is relative to the cell. ugh.
+						Callback.OnCellClick(Widget, new GridViewCellMouseEventArgs(column, e.RowIndex, e.ColumnIndex, item, e.Button.ToEto(), swf.Control.ModifierKeys.ToEto(), location, e.ToEtoDelta()));
 					};
 					break;
 				case Grid.CellDoubleClickEvent:
-					Control.CellDoubleClick += (sender, e) =>
+					Control.CellMouseDoubleClick += (sender, e) =>
 					{
 						if (e.RowIndex > -1)
 						{
 							var item = GetItemAtRow(e.RowIndex);
 							var column = Widget.Columns[e.ColumnIndex];
-							Callback.OnCellDoubleClick(Widget, new GridViewCellEventArgs(column, e.RowIndex, e.ColumnIndex, item));
+							var location = PointFromScreen(Mouse.Position); // e.Location is relative to the cell. ugh.
+							Callback.OnCellDoubleClick(Widget, new GridViewCellMouseEventArgs(column, e.RowIndex, e.ColumnIndex, item, e.Button.ToEto(), swf.Control.ModifierKeys.ToEto(), location, e.ToEtoDelta()));
 						}
 					};
 					break;
@@ -373,6 +375,10 @@ namespace Eto.WinForms.Forms.Controls
 			Control.BeginEdit(true);
 		}
 
+		public bool CommitEdit() => Control.EndEdit();
+
+		public bool CancelEdit() => Control.CancelEdit();
+
 		public virtual void Paint(GridColumnHandler column, System.Drawing.Graphics graphics, System.Drawing.Rectangle clipBounds, System.Drawing.Rectangle cellBounds, int rowIndex, swf.DataGridViewElementStates cellState, object value, object formattedValue, string errorText, swf.DataGridViewCellStyle cellStyle, swf.DataGridViewAdvancedBorderStyle advancedBorderStyle, ref swf.DataGridViewPaintParts paintParts)
 		{
 		}
@@ -446,6 +452,12 @@ namespace Eto.WinForms.Forms.Controls
 						throw new NotSupportedException();
 				}
 			}
+		}
+
+		public BorderType Border
+		{
+			get { return Control.BorderStyle.ToEto(); }
+			set { Control.BorderStyle = value.ToSWF(); }
 		}
 
 		public void ReloadData(IEnumerable<int> rows)

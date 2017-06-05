@@ -1,4 +1,4 @@
-using Eto.Drawing;
+﻿using Eto.Drawing;
 using Eto.Forms;
 using swf = System.Windows.Forms;
 
@@ -8,7 +8,7 @@ namespace Eto.WinForms.Forms
 	{
 		public Widget Widget { get; set; }
 
-		public void Initialize ()
+		public void Initialize()
 		{
 		}
 
@@ -16,12 +16,13 @@ namespace Eto.WinForms.Forms
 
 		public PointF Position
 		{
-			get { return swf.Control.MousePosition.ToEto (); }
+			get { return swf.Cursor.Position.ToEto(); }
+			set { swf.Cursor.Position = value.ToSDPoint(); }
 		}
 
 		public MouseButtons Buttons
 		{
-			get { return swf.Control.MouseButtons.ToEto (); }
+			get { return swf.Control.MouseButtons.ToEto(); }
 		}
 	}
 }

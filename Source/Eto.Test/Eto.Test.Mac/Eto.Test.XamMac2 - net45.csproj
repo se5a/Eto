@@ -9,6 +9,7 @@
     <RootNamespace>Eto.Test.Mac</RootNamespace>
     <LastXamMacNagTime>14/12/2012 1:15:16 AM</LastXamMacNagTime>
     <AssemblyName>Eto.Test.XamMac2</AssemblyName>
+    <UseXamMacFullFramework>true</UseXamMacFullFramework>
   </PropertyGroup>
   <PropertyGroup>
     <FileAlignment>512</FileAlignment>
@@ -65,6 +66,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Startup.cs" />
+    <Compile Include="UnitTests\RichTextAreaHandlerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Info.plist" />

@@ -9,6 +9,16 @@ using System.ComponentModel;
 
 namespace Eto.Wpf.Forms.Controls
 {
+	public class EtoGrid : swc.Grid, IEtoWpfControl
+	{
+		public IWpfFrameworkElement Handler { get; set; }
+
+		protected override sw.Size MeasureOverride(sw.Size constraint)
+		{
+			return Handler?.MeasureOverride(constraint, base.MeasureOverride) ?? base.MeasureOverride(constraint);
+		}
+	}
+
 	public class SplitterHandler : WpfContainer<swc.Grid, Splitter, Splitter.ICallback>, Splitter.IHandler
 	{
 		readonly swc.GridSplitter splitter;
@@ -20,18 +30,23 @@ namespace Eto.Wpf.Forms.Controls
 		int splitterWidth = 5;
 		double relative = double.NaN;
 		readonly sw.Style style;
-		bool panel1Visible;
-		Control panel1;
-		bool panel2Visible;
-		Control panel2;
+        swc.ColumnDefinition xcolumn;
+        swc.RowDefinition ycolumn;
+		bool panel1Visible, panel2Visible;
+        int panel1MinimumSize, panel2MinimumSize;
+        Control panel1, panel2;
 
 		public SplitterHandler()
 		{
-			Control = new swc.Grid();
+			Control = new EtoGrid { Handler = this };
+
+            xcolumn = new swc.ColumnDefinition();
+            Control.ColumnDefinitions.Add(xcolumn);
+			Control.ColumnDefinitions.Add(new swc.ColumnDefinition() { Width = sw.GridLength.Auto });
 			Control.ColumnDefinitions.Add(new swc.ColumnDefinition());
-			Control.ColumnDefinitions.Add(new swc.ColumnDefinition { Width = sw.GridLength.Auto });
-			Control.ColumnDefinitions.Add(new swc.ColumnDefinition());
-			Control.RowDefinitions.Add(new swc.RowDefinition());
+
+            ycolumn = new swc.RowDefinition();
+			Control.RowDefinitions.Add(ycolumn);
 			Control.RowDefinitions.Add(new swc.RowDefinition { Height = sw.GridLength.Auto });
 			Control.RowDefinitions.Add(new swc.RowDefinition());
 
@@ -54,6 +69,7 @@ namespace Eto.Wpf.Forms.Controls
 
 			UpdateOrientation();
 			Control.Loaded += (sender, e) => SetInitialPosition();
+            Control.SizeChanged += (sender, e) => ResetMinMax();
 		}
 
 		public override void AttachEvent(string id)
@@ -62,9 +78,9 @@ namespace Eto.Wpf.Forms.Controls
 			{
 				case Splitter.PositionChangedEvent:
 					var heightDescriptor = DependencyPropertyDescriptor.FromProperty(swc.RowDefinition.HeightProperty, typeof(swc.ItemsControl));
-					heightDescriptor.AddValueChanged(Control.RowDefinitions[0], (sender, e) => Callback.OnPositionChanged(Widget, EventArgs.Empty));
+					heightDescriptor.AddValueChanged(Control.RowDefinitions[0], (sender, e) => OnPositionChanged());
 					var widthDescriptor = DependencyPropertyDescriptor.FromProperty(swc.ColumnDefinition.WidthProperty, typeof(swc.ItemsControl));
-					widthDescriptor.AddValueChanged(Control.ColumnDefinitions[0], (sender, e) => Callback.OnPositionChanged(Widget, EventArgs.Empty));
+					widthDescriptor.AddValueChanged(Control.ColumnDefinitions[0], (sender, e) => OnPositionChanged());
 					break;
 				default:
 					base.AttachEvent(id);
@@ -72,8 +88,24 @@ namespace Eto.Wpf.Forms.Controls
 			}
 		}
 
+		static object PositionChangedEnabled_Key = new object();
+		int PositionChangedEnabled
+		{
+			get { return Widget.Properties.Get(PositionChangedEnabled_Key, 0); }
+			set { Widget.Properties.Set(PositionChangedEnabled_Key, value, 0); }
+		}
+
+		void OnPositionChanged()
+		{
+			if (PositionChangedEnabled == 0)
+				Callback.OnPositionChanged(Widget, EventArgs.Empty);
+		}
+
 		void SetInitialPosition()
 		{
+			panel1Visible = panel1?.Visible ?? false;
+			panel2Visible = panel2?.Visible ?? false;
+
 			// controls should be stretched to fit panels
 			SetStretch(panel1);
 			SetStretch(panel2);
@@ -358,7 +390,7 @@ namespace Eto.Wpf.Forms.Controls
 		{
 			if (desired)
 			{
-				var size = PreferredSize;
+				var size = UserPreferredSize;
 				var pick = Orientation == Orientation.Horizontal ? size.Width : size.Height;
 				if (pick >= 0)
 					return pick - splitterWidth;
@@ -388,7 +420,7 @@ namespace Eto.Wpf.Forms.Controls
 		{
 			get
 			{
-				if (double.IsNaN(relative))
+				if (double.IsNaN(relative) || Widget.Loaded)
 					UpdateRelative();
 				return relative;
 			}
@@ -494,6 +526,7 @@ namespace Eto.Wpf.Forms.Controls
 				return;
 			position = null;
 			relative = newRelative;
+			PositionChangedEnabled++;
 			SetLength(1, sw.GridLength.Auto);
 			if (fixedPanel == SplitterFixedPanel.Panel1)
 			{
@@ -510,6 +543,7 @@ namespace Eto.Wpf.Forms.Controls
 				SetLength(0, new sw.GridLength(Math.Max(0, relative), sw.GridUnitType.Star));
 				SetLength(2, new sw.GridLength(Math.Max(0, 1 - relative), sw.GridUnitType.Star));
 			}
+			PositionChangedEnabled--;
 		}
 
 		public override void SetScale(bool xscale, bool yscale)
@@ -539,9 +573,10 @@ namespace Eto.Wpf.Forms.Controls
 					SetStretch(panel1);
 					if (Widget.Loaded)
 						control.SetScale(true, true);
+
 					pane1.Children.Add(control.ContainerControl);
-					panel1Visible = panel1.Visible;
 					dpdVisibility.AddValueChanged(control.ContainerControl, HandlePanel1IsVisibleChanged);
+					HandlePanelVisibleChanged(ref panel1Visible, panel1);
 				}
 			}
 		}
@@ -566,9 +601,9 @@ namespace Eto.Wpf.Forms.Controls
 					if (Widget.Loaded)
 						control.SetScale(true, true);
 					pane2.Children.Add(control.ContainerControl);
-					panel2Visible = panel2.Visible;
 
 					dpdVisibility.AddValueChanged(control.ContainerControl, HandlePanel2IsVisibleChanged);
+					HandlePanelVisibleChanged(ref panel2Visible, panel2);
 				}
 			}
 		}
@@ -584,7 +619,7 @@ namespace Eto.Wpf.Forms.Controls
 		}
 
 		void HandlePanelVisibleChanged(ref bool isVisible, Control panel)
-		{ 
+		{
 			if ((Control.IsLoaded || WasLoaded) && isVisible != panel.Visible)
 			{
 				isVisible = panel.Visible;
@@ -626,7 +661,38 @@ namespace Eto.Wpf.Forms.Controls
 			set { Widget.Properties.Set(WasLoaded_Key, value); }
 		}
 
-		public override void OnLoad(EventArgs e)
+        private void ResetMinMax()
+        {
+            xcolumn.MinWidth = panel1MinimumSize;
+            if (Widget.Width > 0)
+                xcolumn.MaxWidth = Math.Max(Widget.Width - panel2MinimumSize, 0);
+
+            ycolumn.MinHeight = Panel1MinimumSize;
+            if (Widget.Height > 0)
+                ycolumn.MaxHeight = Math.Max(Widget.Height - panel2MinimumSize, 0);
+        }
+
+        public int Panel1MinimumSize
+        {
+            get { return panel1MinimumSize; }
+            set
+            {
+                panel1MinimumSize = value;
+                ResetMinMax();
+            }
+        }
+
+        public int Panel2MinimumSize
+        {
+            get { return panel2MinimumSize; }
+            set
+            {
+                panel2MinimumSize = value;
+                ResetMinMax();
+            }
+        }
+
+        public override void OnLoad(EventArgs e)
 		{
 			base.OnLoad(e);
 			WasLoaded = false;

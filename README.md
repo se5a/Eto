@@ -3,16 +3,11 @@ Eto.Forms
 ### A cross platform desktop and mobile user interface framework
 
 [![Build status](https://ci.appveyor.com/api/projects/status/rftjjnd9lq2rxc7h/branch/develop?svg=true)](https://ci.appveyor.com/project/cwensley/eto/branch/develop)
-
-Links
------
-
-* Join the [forums](http://groups.google.com/group/eto-forms)
-* Chat in [#eto.forms](https://kiwiirc.com/client/irc.gimp.org/eto.forms) on irc.gimp.org
-* Browse the [wiki](https://github.com/picoe/Eto/wiki) for quick start, tutorials, and API
-* Download binaries using NuGet [![NuGet](http://img.shields.io/nuget/v/Eto.Forms.svg?style=flat)](https://www.nuget.org/packages/Eto.Forms.Sample/) with Visual Studio or Xamarin Studio.
-* For bleeding edge nuget packages, add the MyGet development feed [![MyGet](http://img.shields.io/myget/eto/vpre/Eto.Forms.svg?style=flat)](https://www.myget.org/F/eto/) to your sources list.
-
+[![forums](https://img.shields.io/badge/join-the%20forums-yellowgreen.svg)](http://groups.google.com/group/eto-forms)
+[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/picoe/Eto)
+[![wiki](https://img.shields.io/badge/browse-the%20wiki-orange.svg)](https://github.com/picoe/Eto/wiki)
+[![NuGet](http://img.shields.io/nuget/v/Eto.Forms.svg?style=flat)](https://www.nuget.org/packages/Eto.Forms.Sample/)
+[![MyGet](http://img.shields.io/myget/eto/vpre/Eto.Forms.svg?style=flat&label=MyGet)](https://www.myget.org/F/eto/)
 
 Description
 -----------
@@ -45,6 +40,28 @@ public class MyForm : Form
 		new Application().Run(new MyForm());
 	}
 }
+```
+
+or in a F# script:
+
+```fsharp
+#load ".paket/load/eto.platform.windows.fsx"
+// see https://fsprojects.github.io/Paket/paket-generate-load-scripts.html
+
+open Eto.Drawing
+open Eto.Forms
+
+type MyForm() as this =
+    inherit Form()
+    do
+        this.Title      <- "My Cross-Platform App"
+        this.ClientSize <- Size (200, 200)
+        this.Content    <- new Label(Text = "Hello F# World!")
+
+Eto.Platform.Initialize(Eto.Platforms.WinForms)
+let app = new Application()
+let form = new MyForm()
+form.Show()
 ```
 
 Getting Started

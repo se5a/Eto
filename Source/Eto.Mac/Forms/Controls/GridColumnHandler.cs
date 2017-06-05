@@ -56,6 +56,8 @@ namespace Eto.Mac.Forms.Controls
 		Grid.ICallback Callback { get; }
 
 		Grid Widget { get; }
+
+		bool SuppressUpdate { get; }
 	}
 
 	public interface IDataColumnHandler
@@ -103,7 +105,7 @@ namespace Eto.Mac.Forms.Controls
 
 		protected override void Initialize()
 		{
-			Control.ResizingMask = NSTableColumnResizing.None;
+			Control.ResizingMask = NSTableColumnResizing.UserResizingMask;
 			Sortable = false;
 			HeaderText = string.Empty;
 			Editable = false;

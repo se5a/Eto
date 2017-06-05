@@ -1,7 +1,10 @@
 using swc = System.Windows.Controls;
 using sw = System.Windows;
+using swi = System.Windows.Input;
 using Eto.Forms;
 using Eto.Drawing;
+using System;
+using System.Collections.Generic;
 
 namespace Eto.Wpf.Forms
 {
@@ -21,8 +24,6 @@ namespace Eto.Wpf.Forms
 
 		public bool RecurseToChildren { get { return true; } }
 
-		protected override Size DefaultSize { get { return minimumSize; } }
-
 		public abstract void Remove(sw.FrameworkElement child);
 
 		public virtual Size ClientSize
@@ -41,22 +42,45 @@ namespace Eto.Wpf.Forms
 			}
 		}
 
-		public override void Invalidate()
+		public override sw.Size MeasureOverride(sw.Size constraint, Func<sw.Size, sw.Size> measure)
 		{
-			base.Invalidate();
-			foreach (var control in Widget.VisualChildren)
+			var size = base.MeasureOverride(constraint, measure);
+			size = size.Max(minimumSize.ToWpf());
+			return size;
+		}
+
+		public override void Invalidate(bool invalidateChildren)
+		{
+			base.Invalidate(invalidateChildren);
+			if (invalidateChildren)
 			{
-				control.Invalidate();
+				foreach (var control in Widget.VisualControls)
+				{
+					control.Invalidate(invalidateChildren);
+				}
 			}
 		}
 
-		public override void Invalidate(Rectangle rect)
+		public override void Invalidate(Rectangle rect, bool invalidateChildren)
 		{
-			base.Invalidate(rect);
-			foreach (var control in Widget.VisualChildren)
+			base.Invalidate(rect, invalidateChildren);
+			if (invalidateChildren)
 			{
-				control.Invalidate(rect);
+				foreach (var control in Widget.VisualControls)
+				{
+					control.Invalidate(rect, invalidateChildren);
+				}
 			}
 		}
+
+		public override void OnLoadComplete(EventArgs e)
+		{
+			base.OnLoadComplete(e);
+			// group TabIndex by logical containers, not by visual ones.
+			if (!Widget.IsVisualControl)
+				swi.KeyboardNavigation.SetTabNavigation(ContainerControl, swi.KeyboardNavigationMode.Local);
+		}
+
+		public override IEnumerable<Control> VisualControls => Widget.Controls;
 	}
 }

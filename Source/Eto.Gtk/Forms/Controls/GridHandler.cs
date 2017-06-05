@@ -1,15 +1,16 @@
-using System;
+﻿using System;
 using Eto.Forms;
 using System.Linq;
 using System.Collections.Generic;
 using Eto.GtkSharp.Forms.Cells;
 using Eto.GtkSharp.Forms.Menu;
+using Eto.Drawing;
 
 namespace Eto.GtkSharp.Forms.Controls
 {
 	public abstract class GridHandler<TWidget, TCallback> : GtkControl<Gtk.ScrolledWindow, TWidget, TCallback>, Grid.IHandler, ICellDataSource, IGridHandler
 		where TWidget : Grid
-		where TCallback: Grid.ICallback
+		where TCallback : Grid.ICallback
 	{
 		ColumnCollection columns;
 		ContextMenu contextMenu;
@@ -20,6 +21,8 @@ namespace Eto.GtkSharp.Forms.Controls
 		protected Gtk.TreeView Tree { get; private set; }
 
 		protected Dictionary<int, int> ColumnMap { get { return columnMap; } }
+
+		public override Gtk.Widget EventControl => Tree;
 
 		protected GridHandler()
 		{
@@ -49,7 +52,7 @@ namespace Eto.GtkSharp.Forms.Controls
 			Control.Add(Tree);
 
 			Tree.Events |= Gdk.EventMask.ButtonPressMask;
-			Tree.ButtonPressEvent += Connector.HandleTreeButtonPressEvent;
+			Tree.ButtonPressEvent += Connector.HandleButtonPress;
 
 			columns = new ColumnCollection { Handler = this };
 			columns.Register(Widget.Columns);
@@ -67,8 +70,36 @@ namespace Eto.GtkSharp.Forms.Controls
 			public new GridHandler<TWidget, TCallback> Handler { get { return (GridHandler<TWidget, TCallback>)base.Handler; } }
 
 			[GLib.ConnectBefore]
-			public void HandleTreeButtonPressEvent(object o, Gtk.ButtonPressEventArgs args)
+			public void HandleButtonPress(object o, Gtk.ButtonPressEventArgs args)
 			{
+				var treeview = o as Gtk.TreeView;
+
+				// Gtk default behaviout for multiselect treeview is that
+				// left and right click act the same, which is problematic
+				// when it comes to user selecting multiple items and than
+				// right clicking to find only one item remains selected
+				// or if ctrl is held the current item gets unselected.
+				if (args.Event.Button == 3 && treeview != null)
+				{
+					Gtk.TreeViewDropPosition pos;
+					Gtk.TreePath path;
+
+					if (treeview.GetDestRowAtPos((int)args.Event.X, (int)args.Event.Y, out path, out pos))
+					{
+						var height = 0;
+						if (treeview.HeadersVisible && treeview.Columns.Length > 0)
+							height = treeview.GetCellArea(path, treeview.Columns[0]).Height;
+
+						if (treeview.GetDestRowAtPos((int)args.Event.X, (int)args.Event.Y + height, out path, out pos))
+						{
+							var paths = treeview.Selection.GetSelectedRows().ToList();
+
+							if (paths.Contains(path))
+								args.RetVal = true;
+						}
+					}
+				}
+
 				var handler = Handler;
 				if (handler.contextMenu != null && args.Event.Button == 3 && args.Event.Type == Gdk.EventType.ButtonPress)
 				{
@@ -134,7 +165,7 @@ namespace Eto.GtkSharp.Forms.Controls
 						var columnIndex = GetColumnOfItem(e.Column);
 						var item = GetItem(e.Path);
 						var column = columnIndex == -1 ? null : Widget.Columns[columnIndex];
-						Callback.OnCellDoubleClick(Widget, new GridViewCellEventArgs(column, rowIndex, columnIndex, item));
+						Callback.OnCellClick(Widget, new GridViewCellMouseEventArgs(column, rowIndex, columnIndex, item, Mouse.Buttons, Keyboard.Modifiers, PointFromScreen(Mouse.Position)));
 					};
 					break;
 				case Grid.SelectionChangedEvent:
@@ -147,10 +178,9 @@ namespace Eto.GtkSharp.Forms.Controls
 		}
 
 		[GLib.ConnectBefore]
-		protected virtual void OnTreeButtonPress (object sender, Gtk.ButtonPressEventArgs e)
+		protected virtual void OnTreeButtonPress(object sender, Gtk.ButtonPressEventArgs e)
 		{
-			// If clicked mouse button is not the primary button, return.
-			if (e.Event.Button != 1 || e.Event.Type == Gdk.EventType.TwoButtonPress || e.Event.Type == Gdk.EventType.ThreeButtonPress)
+			if (e.Event.Type == Gdk.EventType.TwoButtonPress || e.Event.Type == Gdk.EventType.ThreeButtonPress)
 				return;
 
 			Gtk.TreePath path;
@@ -166,7 +196,8 @@ namespace Eto.GtkSharp.Forms.Controls
 			var item = GetItem(path);
 			var column = columnIndex == -1 || columnIndex >= Widget.Columns.Count ? null : Widget.Columns[columnIndex];
 
-			Callback.OnCellClick(Widget, new GridViewCellEventArgs(column, rowIndex, columnIndex, item));
+			var loc = PointFromScreen(new PointF((float)e.Event.XRoot, (float)e.Event.YRoot));
+			Callback.OnCellClick(Widget, new GridViewCellMouseEventArgs(column, rowIndex, columnIndex, item, e.Event.ToEtoMouseButtons(), e.Event.State.ToEtoKey(), loc));
 		}
 
 		public override void OnLoadComplete(EventArgs e)
@@ -261,7 +292,8 @@ namespace Eto.GtkSharp.Forms.Controls
 		public bool AllowColumnReordering
 		{
 			get { return Widget.Properties.Get<bool>(AllowColumnReordering_Key, true); }
-			set { 
+			set
+			{
 				Widget.Properties.Set(AllowColumnReordering_Key, value, true);
 				UpdateColumns();
 			}
@@ -389,14 +421,38 @@ namespace Eto.GtkSharp.Forms.Controls
 		public void BeginEdit(int row, int column)
 		{
 			var nameColumn = Tree.Columns[column];
-			#if GTK2
-			var cellRenderer = nameColumn.CellRenderers[0];
-			#else
 			var cellRenderer = nameColumn.Cells[0];
-			#endif
 			var path = Tree.Model.GetPath(GetIterAtRow(row));
 			Tree.Model.IterNChildren();
 			Tree.SetCursorOnCell(path, nameColumn, cellRenderer, true);
+		}
+
+		public bool CommitEdit()
+		{
+			Gtk.TreePath path;
+			Gtk.TreeViewColumn column;
+			Tree.GetCursor(out path, out column);
+			if (path == null || column == null)
+				return true;
+			
+			// This is a hack, but it works to commit editing.  Is there a better way?
+			if (Tree.FocusChild?.HasFocus == true)
+				Tree.ChildFocus(Gtk.DirectionType.TabForward);
+			return true;
+		}
+
+		public bool CancelEdit()
+		{
+			Gtk.TreePath path;
+			Gtk.TreeViewColumn column;
+			Tree.GetCursor(out path, out column);
+			if (path == null || column == null)
+				return true;
+
+			// This is a hack, but it works to abort editing.  Is there a better way?
+			if (Tree.FocusChild?.HasFocus == true)
+				Tree.GrabFocus();
+			return true;
 		}
 
 		public void OnCellFormatting(GridCellFormatEventArgs args)
@@ -451,6 +507,12 @@ namespace Eto.GtkSharp.Forms.Controls
 			}
 		}
 
+		static readonly object Border_Key = new object();
+		public BorderType Border
+		{
+			get { return Widget.Properties.Get(Border_Key, BorderType.Bezel); }
+			set { Widget.Properties.Set(Border_Key, value, () => Control.ShadowType = value.ToGtk(), BorderType.Bezel); }
+		}
 	}
 }
 

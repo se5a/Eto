@@ -34,10 +34,12 @@ namespace Eto.GtkSharp.Forms.Cells
 				height = Math.Max(height, Handler.Source.RowHeight);
 			}
 			#else
-			protected override void OnGetSize (Gtk.Widget widget, ref Gdk.Rectangle cell_area, out int x_offset, out int y_offset, out int width, out int height)
+			protected override void OnGetPreferredHeight(Gtk.Widget widget, out int minimum_size, out int natural_size)
 			{
-				base.OnGetSize (widget, ref cell_area, out x_offset, out y_offset, out width, out height);
-				height = Math.Max(height, Handler.Source.RowHeight);
+				base.OnGetPreferredHeight(widget, out minimum_size, out natural_size);
+
+				minimum_size = Math.Max(minimum_size, Handler.Source.RowHeight);
+				natural_size = Handler.Source.RowHeight;
 			}
 			#endif
 		}
@@ -66,6 +68,30 @@ namespace Eto.GtkSharp.Forms.Cells
 		{
 			imageCell = new ImageRenderer { Handler = this };
 			Control = new Renderer { Handler = this };
+			VerticalAlignment = VerticalAlignment.Center;
+		}
+
+		public TextAlignment TextAlignment
+		{
+			get { return Control.Alignment.ToEto(); }
+			set
+			{
+				Control.Alignment = value.ToPango();
+				Control.Xalign = value.ToAlignment();
+				Column?.Control?.TreeView?.QueueDraw();
+			}
+		}
+
+		VerticalAlignment verticalAlignment = VerticalAlignment.Center;
+		public VerticalAlignment VerticalAlignment
+		{
+			get { return verticalAlignment; }
+			set
+			{
+				verticalAlignment = value;
+				Control.Yalign = value.ToAlignment();
+				Column?.Control?.TreeView?.QueueDraw();
+			}
 		}
 
 		protected override void Initialize()

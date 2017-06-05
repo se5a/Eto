@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using Eto.Drawing;
+using Eto.Forms;
+
+
 #if PORTABLE
 using Portable.Xaml;
 using Portable.Xaml.Markup;
@@ -27,17 +30,16 @@ namespace Eto.Serialization.Xaml
 			XamlType type = null;
 			try
 			{
-				return base.GetXamlType(xamlNamespace, name, typeArguments);
+				type = base.GetXamlType(xamlNamespace, name, typeArguments);
 			}
 			catch
 			{
-				if (DesignMode && type == null && name.IndexOf('.') == -1)
-				{
-					// in designer mode, fail gracefully
-					return new EtoDesignerType(typeof(DesignerMarkupExtension), this) { TypeName = name, Namespace = xamlNamespace };
-				}
-				throw;
+				if (!DesignMode || type != null)
+					throw;
+				// in designer mode, fail gracefully
+				type = new EtoDesignerType(typeof(DesignerMarkupExtension), this) { TypeName = name, Namespace = xamlNamespace };
 			}
+			return type;
 		}
 
 		public override XamlType GetXamlType(Type type)
@@ -63,6 +65,30 @@ namespace Eto.Serialization.Xaml
 				return xamlType;
 			}
 			return base.GetXamlType(type);
+		}
+		bool isInResourceMember;
+		XamlMember resourceMember;
+
+		internal bool IsResourceMember(XamlMember member)
+		{
+			if (member == null)
+				return false;
+			if (resourceMember == null)
+			{
+				if (isInResourceMember)
+					return false;
+				isInResourceMember = true;
+				try
+				{
+					resourceMember = GetXamlType(typeof(Control)).GetMember("Properties");
+				}
+				finally
+				{
+					isInResourceMember = false;
+				}
+			}
+
+			return member == resourceMember;
 		}
 	}
 }

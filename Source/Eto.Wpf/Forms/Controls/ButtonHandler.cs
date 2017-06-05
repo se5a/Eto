@@ -1,9 +1,10 @@
-using System;
+﻿using System;
 using Eto.Forms;
 using Eto.Drawing;
 #if WINRT
 using sw = Windows.UI.Xaml;
 using swc = Windows.UI.Xaml.Controls;
+using wf = Windows.Foundation;
 
 using WpfLabel = Windows.UI.Xaml.Controls.TextBlock;
 using EtoImage = Windows.UI.Xaml.Controls.Image;
@@ -12,12 +13,23 @@ namespace Eto.WinRT.Forms.Controls
 #else
 using sw = System.Windows;
 using swc = System.Windows.Controls;
+using wf = System.Windows;
 
 using WpfLabel = System.Windows.Controls.Label;
 
 namespace Eto.Wpf.Forms.Controls
 #endif
 {
+	public class EtoButton : swc.Button, IEtoWpfControl
+	{
+		public IWpfFrameworkElement Handler { get; set; }
+
+		protected override wf.Size MeasureOverride(wf.Size constraint)
+		{
+			return Handler?.MeasureOverride(constraint, base.MeasureOverride) ?? base.MeasureOverride(constraint);
+		}
+	}
+
 	/// <summary>
 	/// Button handler.
 	/// </summary>
@@ -29,37 +41,13 @@ namespace Eto.Wpf.Forms.Controls
 		readonly swc.Image swcimage;
 		readonly WpfLabel label;
 
-#if WPF
-		public class EtoImage : swc.Image
-		{
-			public ButtonHandler Handler { get; set; }
-
-			protected override sw.Size MeasureOverride(sw.Size constraint)
-			{
-				var size = base.MeasureOverride(constraint);
-				var img = Handler.Image;
-				if (img != null)
-				{
-					var imgSize = img.Size;
-					if (double.IsInfinity(constraint.Height) && double.IsInfinity(constraint.Width))
-						size = img.Size.ToWpf();
-					/*
-						size.Height = imgSize.Height;
-					if (double.IsInfinity(constraint.Width))
-						size.Width = imgSize.Width;*/
-				}
-				return size;
-			}
-		}
-#endif
-
 		public static Size DefaultMinimumSize = new Size(80, 23);
 
-		protected override Size DefaultSize { get { return MinimumSize; } }
+		protected override wf.Size DefaultSize => MinimumSize.ToWpf();
 
 		public ButtonHandler()
 		{
-			Control = new swc.Button();
+			Control = new EtoButton { Handler = this };
 			Control.Click += (sender, e) => Callback.OnClick(Widget, EventArgs.Empty);
 			label = new WpfLabel
 			{
@@ -70,11 +58,7 @@ namespace Eto.Wpf.Forms.Controls
 			};
 			swc.Grid.SetColumn(label, 1);
 			swc.Grid.SetRow(label, 1);
-#if WINRT
-			swcimage = new EtoImage();
-#else
-			swcimage = new EtoImage { Handler = this };
-#endif
+			swcimage = new swc.Image();
 			var grid = new swc.Grid();
 			grid.ColumnDefinitions.Add(new swc.ColumnDefinition { Width = sw.GridLength.Auto });
 			grid.ColumnDefinitions.Add(new swc.ColumnDefinition { Width = new sw.GridLength(1, sw.GridUnitType.Star) });
@@ -137,7 +121,7 @@ namespace Eto.Wpf.Forms.Controls
 
 		void SetImage()
 		{
-			swcimage.Source = Image.ToWpfScale(ParentScale);
+			swcimage.Source = Image.ToWpf(ParentScale);
 		}
 #endif
 
@@ -241,12 +225,7 @@ namespace Eto.Wpf.Forms.Controls
 				if (MinimumSize != value)
 				{
 					Widget.Properties[MinimumSize_Key] = value;
-#if WPF
-					if (Control.IsLoaded)
-						Control.UpdateLayout();
-#else
-					Control.UpdateLayout();
-#endif
+					Control.InvalidateMeasure();
 				}
 			}
 		}

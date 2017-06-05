@@ -27,8 +27,8 @@ namespace Eto.Test.Sections.Controls
 	[Section("Controls", typeof(GridView))]
 	public class GridViewSection : Panel
 	{
-		static readonly Image image1 = TestIcons.TestImage;
-		static readonly Image image2 = TestIcons.TestIcon;
+		static Icon image1 = new Icon(1, TestIcons.TestImage).WithSize(16, 16);
+		static Icon image2 = TestIcons.TestIcon.WithSize(16, 16);
 
 		public GridViewSection()
 		{
@@ -51,15 +51,27 @@ namespace Eto.Test.Sections.Controls
 				Rows =
 				{
 					new TableRow(
-						"Grid", 
+						"Grid",
 						new TableLayout(
 							CreateOptions(gridView, filteredCollection),
-							gridView
+							new TableRow(gridView) { ScaleHeight = true },
+                            CreatePositionLabel(gridView)
 						)
 					) { ScaleHeight = true },
 					new TableRow("Selected Items", selectionGridView)
 				}
 			};
+		}
+
+		Label CreatePositionLabel(GridView grid)
+		{
+			var label = new Label();
+			grid.MouseMove += (sender, e) =>
+			{
+				var cell = grid.GetCellAt(e.Location);
+				label.Text = $"Row: {cell?.RowIndex}, Column: {cell?.ColumnIndex} ({cell?.Column?.HeaderText}), Item: {cell?.Item}";
+			};
+			return label;
 		}
 
 		StackLayout CreateOptions(GridView grid, SelectableFilterCollection<MyGridItem> filtered)
@@ -70,37 +82,67 @@ namespace Eto.Test.Sections.Controls
 				HorizontalContentAlignment = HorizontalAlignment.Stretch,
 				Items =
 				{
-					new StackLayout
-					{
-						Orientation = Orientation.Horizontal,
-						Spacing = 5,
-						Items =
-						{
-							null,
-							EnabledCheckBox(grid),
-							EditableCheckBox(grid),
-							AllowMultiSelectCheckBox(grid),
-							ShowHeaderCheckBox(grid),
-							GridLinesDropDown(grid),
-							null
-						}
-					},
-					new StackLayout 
-					{
-						Orientation = Orientation.Horizontal,
-						Spacing = 5,
-						Items =
-						{
-							null,
-							AddItemButton(filtered),
-							CreateScrollToRow(grid),
-							CreateBeginEditButton(grid),
-							null
-						}
-					},
+					TableLayout.Horizontal(
+						5,
+						null,
+						EnabledCheckBox(grid),
+						EditableCheckBox(grid),
+						AllowMultiSelectCheckBox(grid),
+						ShowHeaderCheckBox(grid),
+						GridLinesDropDown(grid),
+						null
+					),
+					TableLayout.Horizontal(
+						5,
+						null,
+						AddItemButton(filtered),
+						CreateScrollToRow(grid),
+						CreateBeginEditButton(grid),
+						"Border",
+						CreateBorderType(grid),
+						null
+					),
+					TableLayout.Horizontal(
+						5,
+						null,
+						ReloadDataButton(grid),
+						null
+					),
+					TableLayout.Horizontal(
+						5,
+						null,
+						"TextBoxCell:",
+						"TextAlignment", TextAlignmentDropDown(grid),
+						"VerticalAlignment", VerticalAlignmentDropDown(grid),
+						null
+					),
 					CreateSearchBox(filtered)
 				}
 			};
+		}
+
+		Control TextAlignmentDropDown(GridView grid)
+		{
+			var control = new EnumDropDown<TextAlignment>();
+
+			var textBoxCell = grid.Columns.Select(r => r.DataCell).OfType<TextBoxCell>().First();
+			control.SelectedValueBinding.Bind(textBoxCell, c => c.TextAlignment);
+
+			var imageTextCell = grid.Columns.Select(r => r.DataCell).OfType<ImageTextCell>().First();
+			control.SelectedValueBinding.Bind(imageTextCell, c => c.TextAlignment);
+			return control;
+		}
+
+		Control VerticalAlignmentDropDown(GridView grid)
+		{
+			var control = new EnumDropDown<VerticalAlignment>();
+
+			var textBoxCell = grid.Columns.Select(r => r.DataCell).OfType<TextBoxCell>().First();
+			control.SelectedValueBinding.Bind(textBoxCell, c => c.VerticalAlignment);
+
+			var imageTextCell = grid.Columns.Select(r => r.DataCell).OfType<ImageTextCell>().First();
+			control.SelectedValueBinding.Bind(imageTextCell, c => c.VerticalAlignment);
+			return control;
 		}
 
 		ComboBoxCell MyDropDown(string bindingProperty)
@@ -127,6 +169,13 @@ namespace Eto.Test.Sections.Controls
 		{
 			var control = new CheckBox { Text = "ShowHeader" };
 			control.CheckedBinding.Bind(grid, r => r.ShowHeader);
+			return control;
+		}
+
+		Control ReloadDataButton(GridView grid)
+		{
+			var control = new Button { Text = "ReloadData" };
+			control.Click += (sender, e) => grid.ReloadData(grid.SelectedRows);
 			return control;
 		}
 
@@ -188,12 +237,19 @@ namespace Eto.Test.Sections.Controls
 			return filterText;
 		}
 
+		Control CreateBorderType(GridView grid)
+		{
+			var borderType = new EnumDropDown<BorderType>();
+			borderType.SelectedValueBinding.Bind(grid, g => g.Border);
+			return borderType;
+		}
+
 		class MyCustomCell : CustomCell
 		{
 			protected override Control OnCreateCell(CellEventArgs args)
 			{
 				//Log.Write(this, "OnCreateCell: Row: {1}, CellState: {2}, Item: {0}", args.Item, args.Row, args.CellState);
-
+				//var control = new Label();
 				var control = new Button();
 				control.TextBinding.BindDataContext((MyGridItem m) => m.Text);
 				control.BindDataContext(c => c.Command, (MyGridItem m) => m.Command);
@@ -292,6 +348,23 @@ namespace Eto.Test.Sections.Controls
 		{
 			// Context menu
 			var menu = new ContextMenu();
+
+			var commitEditItem = new ButtonMenuItem { Text = "CommitEdit" };
+			commitEditItem.Click += (s, e) =>
+			{
+				var result = grid.CommitEdit();
+				Log.Write(grid, $"CommitEdit, Result: {result}");
+			};
+			menu.Items.Add(commitEditItem);
+
+			var abortEditItem = new ButtonMenuItem { Text = "CancelEdit" };
+			abortEditItem.Click += (s, e) =>
+			{
+				var result = grid.CancelEdit();
+				Log.Write(grid, $"CancelEdit, Result: {result}");
+			};
+			menu.Items.Add(abortEditItem);
+
 			var item = new ButtonMenuItem { Text = "Click Me!" };
 			item.Click += (sender, e) =>
 			{
@@ -449,19 +522,23 @@ namespace Eto.Test.Sections.Controls
 			{
 				// initialize to random values
 				this.Row = row;
-				var val = rand.Next(3);
+				var val = row % 3;
 				check = val == 0 ? (bool?)false : val == 1 ? (bool?)true : null;
 
-				val = rand.Next(3);
+				val = row % 2;
 				Image = val == 0 ? image1 : val == 1 ? (Image)image2 : null;
 
 				text = string.Format("Col 1 Row {0}", row);
 
-				Color = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
+				Color = Color.FromElementId(row);
 
-				dropDownKey = "Item " + Convert.ToString(rand.Next(4) + 1);
+				val = row % 5;
+				if (val < 4)
+					dropDownKey = "Item " + Convert.ToString(val + 1);
 
-				progress = rand.Next() % 10 != 0 ? (float?)rand.NextDouble() : null;
+				val = row % 12;
+				if (val <= 10)
+					progress = (float)Math.Round(val / 10f, 1);
 			}
 
 			public override string ToString()

@@ -23,7 +23,7 @@ namespace Eto.Forms
 		/// Gets or sets the items on this row.
 		/// </summary>
 		/// <value>The items contained in this row</value>
-		[Obsolete("The DynamicRow is now its own collection, so add directly")]
+		[Obsolete("Since 2.2: The DynamicRow is now its own collection, so add directly")]
 		public new Collection<DynamicItem> Items
 		{ 
 			get { return this; }
@@ -381,15 +381,15 @@ namespace Eto.Forms
 				return null;
 			int cols = Rows.Where(r => r != null).Max(r => r.Count);
 
-			Table = new TableLayout(cols, Rows.Count);
-			var tableLayout = Table;
+			var table = Table = new TableLayout(cols, Rows.Count);
+			table.IsVisualControl = true;
 			var padding = Padding ?? layout.DefaultPadding;
 			if (padding != null)
-				tableLayout.Padding = padding.Value;
+				table.Padding = padding.Value;
 
 			var spacing = Spacing ?? layout.DefaultSpacing;
 			if (spacing != null)
-				tableLayout.Spacing = spacing.Value;
+				table.Spacing = spacing.Value;
 
 			var scalingRow = new DynamicRow();
 			scalingRow.Add(new DynamicControl { YScale = true });
@@ -399,10 +399,10 @@ namespace Eto.Forms
 				for (int cx = 0; cx < row.Count; cx++)
 				{
 					var item = row[cx] ?? new DynamicControl { XScale = true };
-					item.Create(layout, tableLayout, cx, cy);
+					item.Create(layout, table, cx, cy);
 				}
 			}
-			return Table;
+			return table;
 		}
 
 		void ISupportInitialize.BeginInit()

@@ -520,14 +520,14 @@ namespace Eto.WinForms.Forms
 			}
 		}
 
-		public virtual void Invalidate()
+		public virtual void Invalidate(bool invalidateChildren)
 		{
-			Control.Invalidate(true);
+			Control.Invalidate(invalidateChildren);
 		}
 
-		public virtual void Invalidate(Rectangle rect)
+		public virtual void Invalidate(Rectangle rect, bool invalidateChildren)
 		{
-			Control.Invalidate(rect.ToSD(), true);
+			Control.Invalidate(rect.ToSD(), invalidateChildren);
 		}
 
 		public virtual Color BackgroundColor
@@ -766,5 +766,13 @@ namespace Eto.WinForms.Forms
 			get { return Control.ForeColor.ToEto(); }
 			set { Control.ForeColor = value.ToSD(); }
 		}
+
+		public virtual int TabIndex
+		{
+			get { return Control.TabIndex; }
+			set { Control.TabIndex = value; }
+		}
+
+		public virtual IEnumerable<Control> VisualControls => Enumerable.Empty<Control>();
 	}
 }
