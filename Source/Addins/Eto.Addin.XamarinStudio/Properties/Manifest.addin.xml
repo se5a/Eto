@@ -36,6 +36,10 @@
 			<!-- mono's VB compiler doesn't support embedded resources for some reason
 			<FileTemplate id="eto.vb.xeto.panel" file="Templates/Files/VB/xeto/panel.xft.xml" />
 			<FileTemplate id="eto.vb.jeto.panel" file="Templates/Files/VB/jeto/panel.xft.xml" />
+			<FileTemplate id="eto.vb.xeto.form" file="Templates/Files/VB/xeto/form.xft.xml" />
+			<FileTemplate id="eto.vb.jeto.form" file="Templates/Files/VB/jeto/form.xft.xml" />
+			<FileTemplate id="eto.vb.xeto.dialog" file="Templates/Files/VB/xeto/dialog.xft.xml" />
+			<FileTemplate id="eto.vb.jeto.dialog" file="Templates/Files/VB/jeto/dialog.xft.xml" />
 			-->
 		</Condition>
 		<ComplexCondition>
@@ -47,6 +51,12 @@
 			<FileTemplate id="eto.fs.preview.panel" file="Templates/Files/FS/code/panel.preview.xft.xml" />
 			<FileTemplate id="eto.fs.xeto.panel" file="Templates/Files/FS/xeto/panel.xft.xml" />
 			<FileTemplate id="eto.fs.jeto.panel" file="Templates/Files/FS/jeto/panel.xft.xml" />
+			<FileTemplate id="eto.fs.code.form" file="Templates/Files/FS/code/form.code.xft.xml" />
+			<FileTemplate id="eto.fs.xeto.form" file="Templates/Files/FS/xeto/form.xft.xml" />
+			<FileTemplate id="eto.fs.jeto.form" file="Templates/Files/FS/jeto/form.xft.xml" />
+			<FileTemplate id="eto.fs.code.dialog" file="Templates/Files/FS/code/dialog.code.xft.xml" />
+			<FileTemplate id="eto.fs.xeto.dialog" file="Templates/Files/FS/xeto/dialog.xft.xml" />
+			<FileTemplate id="eto.fs.jeto.dialog" file="Templates/Files/FS/jeto/dialog.xft.xml" />
 		</ComplexCondition>
 	</Extension>
 	<Extension path="/MonoDevelop/Ide/ProjectTemplateWizards">

@@ -54,6 +54,10 @@
     <Compile Include="Templates\Files\CS\jeto\form.jeto.cs" />
     <Compile Include="Templates\Files\CS\xeto\dialog.xeto.cs" />
     <Compile Include="Templates\Files\CS\xeto\form.xeto.cs" />
+    <Compile Include="Templates\Files\VB\jeto\dialog.jeto.vb" />
+    <Compile Include="Templates\Files\VB\jeto\form.jeto.vb" />
+    <Compile Include="Templates\Files\VB\xeto\dialog.xeto.vb" />
+    <Compile Include="Templates\Files\VB\xeto\form.xeto.vb" />
     <Compile Include="VBDotNetProjectExtension.cs" />
     <Compile Include="FSharpProjectBinding.cs" />
     <Compile Include="ParameterSource.cs" />
@@ -373,6 +377,30 @@
     <Content Include="Templates\Files\CS\xeto\dialog.xft.xml" />
     <Content Include="Templates\Files\CS\xeto\form.xeto" />
     <Content Include="Templates\Files\CS\xeto\form.xft.xml" />
+    <Content Include="Templates\Files\FS\code\dialog.code.fs" />
+    <Content Include="Templates\Files\FS\code\dialog.code.xft.xml" />
+    <Content Include="Templates\Files\FS\code\form.code.fs" />
+    <Content Include="Templates\Files\FS\code\form.code.xft.xml" />
+    <Content Include="Templates\Files\FS\jeto\dialog.jeto" />
+    <Content Include="Templates\Files\FS\jeto\dialog.jeto.fs" />
+    <Content Include="Templates\Files\FS\jeto\dialog.xft.xml" />
+    <Content Include="Templates\Files\FS\jeto\form.jeto" />
+    <Content Include="Templates\Files\FS\jeto\form.jeto.fs" />
+    <Content Include="Templates\Files\FS\jeto\form.xft.xml" />
+    <Content Include="Templates\Files\FS\xeto\dialog.xeto" />
+    <Content Include="Templates\Files\FS\xeto\dialog.xeto.fs" />
+    <Content Include="Templates\Files\FS\xeto\dialog.xft.xml" />
+    <Content Include="Templates\Files\FS\xeto\form.xeto" />
+    <Content Include="Templates\Files\FS\xeto\form.xeto.fs" />
+    <Content Include="Templates\Files\FS\xeto\form.xft.xml" />
+    <Content Include="Templates\Files\VB\jeto\dialog.jeto" />
+    <Content Include="Templates\Files\VB\jeto\dialog.xft.xml" />
+    <Content Include="Templates\Files\VB\jeto\form.jeto" />
+    <Content Include="Templates\Files\VB\jeto\form.xft.xml" />
+    <Content Include="Templates\Files\VB\xeto\dialog.xeto" />
+    <Content Include="Templates\Files\VB\xeto\dialog.xft.xml" />
+    <Content Include="Templates\Files\VB\xeto\form.xeto" />
+    <Content Include="Templates\Files\VB\xeto\form.xft.xml" />
   </ItemGroup>
   <Import Project="..\..\Shared\Common.targets" />
   <Import Project="..\packages\MonoDevelop.Addins.0.3.8\build\net40\MonoDevelop.Addins.targets" Condition="Exists('..\packages\MonoDevelop.Addins.0.3.8\build\net40\MonoDevelop.Addins.targets')" />
