@@ -1,0 +1,17 @@
+﻿<?xml version="1.0"?>
+<Template>
+	<TemplateConfiguration>
+		<_Name>Dialog</_Name>
+		<Icon>md-text-file-icon</Icon>
+		<_Category>Eto.Forms</_Category>
+		<LanguageName>F#</LanguageName>
+		<_Description>
+			<![CDATA[Creates a new cross platform Dialog class using Eto.Forms in F#.]]>
+		</_Description>
+		<DefaultFilename>MyDialog</DefaultFilename>
+		<GroupId>eto-file-dialog</GroupId>
+	</TemplateConfiguration>
+	<TemplateFiles>
+        <File name="${Name}.fs" AddStandardHeader="true" src="dialog.code.fs"/>
+	</TemplateFiles>
+</Template>
