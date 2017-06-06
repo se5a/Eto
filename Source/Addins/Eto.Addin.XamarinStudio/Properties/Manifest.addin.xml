@@ -22,7 +22,11 @@
 	</Extension>
 	<Extension path="/MonoDevelop/Ide/FileTemplates">
 		<FileTemplate id="eto.cs.code.form" file="Templates/Files/CS/code/form.xft.xml" />
+		<FileTemplate id="eto.cs.xeto.form" file="Templates/Files/CS/xeto/form.xft.xml" />
+		<FileTemplate id="eto.cs.jeto.form" file="Templates/Files/CS/jeto/form.xft.xml" />		
 		<FileTemplate id="eto.cs.code.dialog" file="Templates/Files/CS/code/dialog.xft.xml" />
+		<FileTemplate id="eto.cs.xeto.dialog" file="Templates/Files/CS/xeto/dialog.xft.xml" />
+		<FileTemplate id="eto.cs.jeto.dialog" file="Templates/Files/CS/jeto/dialog.xft.xml" />		
 		<FileTemplate id="eto.cs.preview.panel" file="Templates/Files/CS/code/panel.preview.xft.xml" />
 		<FileTemplate id="eto.cs.code.panel" file="Templates/Files/CS/code/panel.code.xft.xml" />
 		<FileTemplate id="eto.cs.xeto.panel" file="Templates/Files/CS/xeto/panel.xft.xml" />

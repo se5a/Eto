@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\MonoDevelop.Addins.0.3.8\build\net40\MonoDevelop.Addins.props" Condition="Exists('..\packages\MonoDevelop.Addins.0.3.8\build\net40\MonoDevelop.Addins.props')" />
   <PropertyGroup>
@@ -50,6 +50,10 @@
     <Compile Include="ProjectWizard.cs" />
     <Compile Include="ProjectWizardPage.cs" />
     <Compile Include="EtoInitializer.cs" />
+    <Compile Include="Templates\Files\CS\jeto\dialog.jeto.cs" />
+    <Compile Include="Templates\Files\CS\jeto\form.jeto.cs" />
+    <Compile Include="Templates\Files\CS\xeto\dialog.xeto.cs" />
+    <Compile Include="Templates\Files\CS\xeto\form.xeto.cs" />
     <Compile Include="VBDotNetProjectExtension.cs" />
     <Compile Include="FSharpProjectBinding.cs" />
     <Compile Include="ParameterSource.cs" />
@@ -359,6 +363,16 @@
       <Version>5.9</Version>
     </AddinReference>
     <AddinReference Include="MonoDevelop.MacPlatform" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Templates\Files\CS\jeto\dialog.jeto" />
+    <Content Include="Templates\Files\CS\jeto\dialog.xft.xml" />
+    <Content Include="Templates\Files\CS\jeto\form.jeto" />
+    <Content Include="Templates\Files\CS\jeto\form.xft.xml" />
+    <Content Include="Templates\Files\CS\xeto\dialog.xeto" />
+    <Content Include="Templates\Files\CS\xeto\dialog.xft.xml" />
+    <Content Include="Templates\Files\CS\xeto\form.xeto" />
+    <Content Include="Templates\Files\CS\xeto\form.xft.xml" />
   </ItemGroup>
   <Import Project="..\..\Shared\Common.targets" />
   <Import Project="..\packages\MonoDevelop.Addins.0.3.8\build\net40\MonoDevelop.Addins.targets" Condition="Exists('..\packages\MonoDevelop.Addins.0.3.8\build\net40\MonoDevelop.Addins.targets')" />
